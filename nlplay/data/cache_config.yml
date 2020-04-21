@@ -1,0 +1,233 @@
+cache: ./data_cache
+datasets:
+    20_NEWS:
+      name: 20_NEWS.tar.gz
+      url: 1yTRNOTxsyrICxDexLxAUSivpApr2OSYC
+      type_url: gdrive
+      size: 8947117
+      text_col: 1
+      lbl_col: 0
+      header: 0
+      train_file: 20_newsgroup_train.csv
+      test_file: 20_newsgroup_test.csv
+    AG_NEWS:
+      name: AG_NEWS.tar.gz
+      url: 0Bz8a_Dbh9QhbUDNpeUdjb0wxRms
+      type_url: gdrive
+      size: 11784327
+      text_col: 1
+      lbl_col: 0
+      header: None
+      train_file: train.csv
+      test_file: test.csv
+      val_file: None
+      label_file: classes.txt
+    AMAZON_FULL:
+      name: AMAZON_FULL.tar.gz
+      url: 0Bz8a_Dbh9QhbZVhsUnRWRDhETzA
+      type_url: gdrive
+      size: 643695117
+      text_col: 1
+      lbl_col: 0
+      header: None
+      train_file: train.csv
+      test_file: test.csv
+      val_file: None
+      label_file: None
+    AMAZON_POLARITY:
+      name: AMAZON_POLARITY.tar.gz
+      url: 0Bz8a_Dbh9QhbaW12WVVZS2drcnM
+      type_url: gdrive
+      size: 688340758
+      text_col: 1
+      lbl_col: 0
+      header: None
+      train_file: train.csv
+      test_file: test.csv
+      val_file: None
+      label_file: None
+    DBPEDIA:
+      name: DBPEDIA.tar.gz
+      url: 0Bz8a_Dbh9QhbQ2Vic1kxMmZZQ1k
+      type_url: gdrive
+      size: 68341698
+      text_col: 1
+      lbl_col: 0
+      header: None
+      train_file: train.csv
+      test_file: test.csv
+      val_file: None
+      label_file: classes.txt
+    IMDB:
+      name: IMDB.tar.gz
+      url: 1TSJUvPcuR0NtqyNTIi5VzaJRO47WoJOF
+      type_url: gdrive
+      size: 26494221
+      text_col : 0
+      lbl_col : 1
+      header: 0
+      train_file: IMDB_train.csv
+      test_file: IMDB_test.csv
+      val_file: None
+      label_file: IMDB_labels.csv
+#    MR :
+#      name: MR.tar.gz
+#      url: XX
+#      type_url: gdrive
+#      size: 26494221
+    SOGOU:
+      name: SOGOU.tar.gz
+      url: 0Bz8a_Dbh9QhbUkVqNEszd0pHaFE
+      type_url: gdrive
+      size: 384270492
+      text_col: 1
+      lbl_col: 0
+      header: None
+      train_file: train.csv
+      test_file: test.csv
+      val_file: None
+      label_file: classes.txt
+    SST2:
+      name: SST2.tar.gz
+      url: 1QbxTxHIaf_B_AyGpM-p5VPaOYbA3KHoL
+      type_url: gdrive
+      size: 826412
+      text_col: 1
+      lbl_col: 0
+      header: 0
+      train_file: SST2_train.csv
+      test_file: SST2_test.csv
+      val_file: SST2_val.csv
+      label_file: SST2_labels.csv
+    TREC_6:
+      name: TREC_6.tar.gz
+      url: 1f0lZMEYuwhvKxsLqBQ3Wnj_PuLAUJSW1
+      type_url: gdrive
+      size: 117994
+      text_col: 1
+      lbl_col: 0
+      header: 0
+      train_file: TREC6_train.csv
+      test_file: TREC6_test.csv
+      val_file: None
+      label_file: TREC6_labels.csv
+    TREC_50:
+      name: TREC_50.tar.gz
+      url: 1jY8LTIO-BF6l-g-utpk5vCPuu_Zl2QlI
+      type_url: gdrive
+      size: 120492
+      text_col: 1
+      lbl_col: 0
+      header: 0
+      train_file: TREC50_train.csv
+      test_file: TREC50_test.csv
+      val_file: None
+      label_file: TREC50_labels.csv
+    YAHOO:
+      name: YAHOO.tar.gz
+      url: 0Bz8a_Dbh9Qhbd2JNdDBsQUdocVU
+      type_url: gdrive
+      size: 319476309
+      text_col: 1
+      lbl_col: 0
+      header: None
+      train_file: train.csv
+      test_file: test.csv
+      val_file: None
+      label_file: classes.txt
+    YELP_FULL:
+      name: YELP_FULL.tar.gz
+      url: 0Bz8a_Dbh9QhbZlU4dXhHTFhZQU0
+      type_url: gdrive
+      size: 196146693
+      text_col: 1
+      lbl_col: 0
+      header: None
+      train_file: train.csv
+      test_file: test.csv
+      val_file: None
+      label_file: None
+    YELP_POLARITY:
+      name: YELP_POLARITY.tar.gz
+      url: 0Bz8a_Dbh9QhbNUpYQ2N3SGlFaDg
+      type_url: gdrive
+      size: 166373322
+      text_col: 1
+      lbl_col: 0
+      header: None
+      train_file: train.csv
+      test_file: test.csv
+      val_file: None
+      label_file: None
+
+pretrained_vectors:
+    FASTTEXT_XXWIKI_300:
+      mdl_familly: FASTTEXT
+      url: https://dl.fbaipublicfiles.com/fasttext/vectors-wiki/wiki.{}.vec
+      type_url: std
+      wv_file: wiki.{}.vec
+      dim: 300
+      size: -1
+    FASTTEXT_ENWIKI_300:
+      mdl_familly: FASTTEXT
+      url: https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-300d-1M.vec.zip
+      type_url: std
+      wv_file: wiki-news-300d-1M.vec
+      dim: 300
+      size: -1
+    FASTTEXT_ENWIKI_SUB_300:
+      mdl_familly: FASTTEXT
+      url: https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-300d-1M-subword.vec.zip
+      type_url: std
+      wv_file: wiki-news-300d-1M.vec
+      dim: 300
+      size: -1
+    FASTTEXT_ENCC_300:
+      mdl_familly: FASTTEXT
+      url: https://dl.fbaipublicfiles.com/fasttext/vectors-english/crawl-300d-2M.vec.zip
+      type_url: std
+      wv_file: xx
+      dim: 300
+      size: -1
+    FASTTEXT_ENCC_SUB_300:
+      mdl_familly: FASTTEXT
+      url: https://dl.fbaipublicfiles.com/fasttext/vectors-english/crawl-300d-2M-subword.zip
+      type_url: std
+      wv_file: xx
+      dim: 300
+      size: -1
+    GLOVE_EN6B_50:
+      mdl_familly: GLOVE
+      url: http://nlp.stanford.edu/data/glove.6B.zip
+      type_url: std
+      wv_file: glove.6B.50d.txt
+      dim: 50
+      size: -1
+    GLOVE_EN6B_100:
+      mdl_familly: GLOVE
+      url: http://nlp.stanford.edu/data/glove.6B.zip
+      type_url: std
+      wv_file: glove.6B.100d.txt
+      dim: 100
+      size: -1
+    GLOVE_EN6B_200:
+      mdl_familly: GLOVE
+      url: http://nlp.stanford.edu/data/glove.6B.zip
+      type_url: std
+      wv_file: glove.6B.200d.txt
+      dim: 200
+      size: -1
+    GLOVE_EN6B_300:
+      mdl_familly: GLOVE
+      url: http://nlp.stanford.edu/data/glove.6B.zip
+      type_url: std
+      wv_file: glove.6B.300d.txt
+      dim: 300
+      size: -1
+    GLOVE_EN840B_300:
+      mdl_familly: GLOVE
+      url: http://nlp.stanford.edu/data/glove.840B.300d.zip
+      type_url: std
+      wv_file: glove.840B.300d.txt
+      dim: 300
+      size: -1
