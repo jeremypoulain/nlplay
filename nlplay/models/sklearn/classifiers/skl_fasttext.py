@@ -1,4 +1,8 @@
 """
+Title   : Bag of Tricks for Efficient Text Classification
+Author  : Joulin, Armand and Grave, Edouard and Bojanowski, Piotr and Mikolov, Tomas
+Papers  : https://arxiv.org/abs/1607.01759
+
 A scikit-learn wrapper for Facebook FastText python interface
 Inspired by work from :
 Author: Evgenii Nikitin <e.nikitin@nyu.edu>
@@ -6,21 +10,17 @@ Github : https://github.com/crazyfrogspb/RedditScore
 Copyright (c) 2018 Evgenii Nikitin. All rights reserved.
 This work is licensed under the terms of the MIT license.
 """
-import multiprocessing
-import os
-import tempfile
-import numpy as np
-import pandas as pd
 import gzip
+import multiprocessing
 import shutil
+import tempfile
 from pathlib import Path
-from typing import List
 import fasttext
+import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 
 class FastTextClassifier(BaseEstimator, ClassifierMixin):
-    """FastText wrapper that allows for pre-trained embeddings."""
     def __init__(
         self,
         lr=0.1,
@@ -114,7 +114,7 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
         else:
             raise ValueError("X has to contain sequence of tokens or strings")
         predictions = self._model.predict(docs, k=1)[0]
-        return np.array([pred[0][len(self.label):] for pred in predictions])
+        return np.array([pred[0][len(self.label) :] for pred in predictions])
 
     def predict_proba(
         self,
@@ -169,7 +169,6 @@ class FastTextClassifier(BaseEstimator, ClassifierMixin):
 
     def load_model(self, model_path: str):
         """Load a previously saved FastText model"""
-
         model_path = Path(model_path)
         suffixes = model_path.suffixes
         if suffixes[-1] == ".gz":

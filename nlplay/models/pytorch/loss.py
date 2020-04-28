@@ -5,7 +5,10 @@ import torch.nn.functional as F
 
 class FocalLoss(nn.Module):
     """
-    https://github.com/mbsariyildiz/focal-loss.pytorch
+    Title    : Focal Loss for Dense Object Detection - 2017
+    Authors  : Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, Piotr Dollár
+    Papers   : https://www.aclweb.org/anthology/P12-2018.pdf
+    Source   : https://github.com/mbsariyildiz/focal-loss.pytorch
     """
     def __init__(self, gamma=0, alpha=None, size_average=True):
         super(FocalLoss, self).__init__()
@@ -51,7 +54,6 @@ class MultiClassHingeLoss(nn.Module):
           Let's denote hinge loss as h(x)=max(0,1-x). h'(x) does not exist when x=1,
           because the left and right limits do not converge to the same number, i.e.,
           h'(1-delta)=-1 but h'(1+delta)=0.
-
           To overcome this obstacle, people proposed squared hinge loss h2(x)=max(0,1-x)^2. In this case,
           h2'(1-delta)=h2'(1+delta)=0
     """
@@ -79,5 +81,5 @@ class MultiClassHingeLoss(nn.Module):
         # sum up
         loss = torch.sum(loss)
         if self.size_average:
-            loss /= output.size()[0]  # output.size()[0]
+            loss /= output.size()[0]
         return loss

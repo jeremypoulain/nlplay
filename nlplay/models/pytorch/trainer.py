@@ -5,7 +5,7 @@ from pathlib import Path
 import torch
 from torch.utils.data import Dataset, DataLoader
 from nlplay.models.pytorch.lr_finder import LRFinder
-from nlplay.models.pytorch.utils import set_seed
+from nlplay.models.pytorch.utils import set_seed, get_gpu_info
 from nlplay.models.pytorch.metrics import compute_accuracy
 from nlplay.utils.utils import get_elapsed_time
 
@@ -16,6 +16,7 @@ class PytorchModelTrainer(object):
         model=None,
         criterion=None,
         optimizer=None,
+        lr_scheduler=None,
         train_ds: Dataset = None,
         test_ds: Dataset = None,
         val_ds: Dataset = None,
@@ -23,6 +24,7 @@ class PytorchModelTrainer(object):
         n_workers: int = 1,
         epochs: int = 5,
         model_output_folder: Path = "",
+        checkpoint_file_suffix: str = "",
         early_stopping=True,
         early_stopping_patience: int = 3
     ):
@@ -30,6 +32,7 @@ class PytorchModelTrainer(object):
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
+        self.lr_scheduler = lr_scheduler
         self.batch_size = batch_size
         self.num_workers = n_workers
         self.n_epochs = epochs
@@ -49,6 +52,7 @@ class PytorchModelTrainer(object):
         self.es_patience = early_stopping_patience
         self.es_improvement_delta = 0
         self.model_output_folder = model_output_folder
+        self.checkpoint_file_suffix = checkpoint_file_suffix
         logging.getLogger(__name__)
 
     def train(self, seed=42, check_dl=True, run_lr_finder=False):
@@ -108,8 +112,8 @@ class PytorchModelTrainer(object):
         logging.info("Number of iterations/epoch : {}".format(n_iters))
         log_interval = 10
 
-        start_time = time.time()
         # Loop over epochs
+        start_time = time.time()
         for epoch in range(self.n_epochs):
             self.model.train()
             for batch_index, (batch_train_data, batch_train_labels) in enumerate(
@@ -128,6 +132,8 @@ class PytorchModelTrainer(object):
                 loss = self.criterion(outputs, batch_train_labels)
                 loss.backward()
                 self.optimizer.step()
+                if self.lr_scheduler is not None:
+                    self.lr_scheduler.step()
 
                 # Report intermediate loss value after a certain amount of batches
                 if (batch_index + 1) % log_interval == 0:
@@ -135,6 +141,8 @@ class PytorchModelTrainer(object):
                         "   Info | Epoch: %03d/%03d | Batch %04d/%04d | Loss: %.6f"
                         % (epoch + 1, self.n_epochs, batch_index + 1, n_iters, loss)
                     )
+
+            logging.info("   Info | " + get_gpu_info(device))
 
             # End of epoch - Evaluate the model performance
             self.model.eval()
@@ -198,6 +206,6 @@ class PytorchModelTrainer(object):
             self.model.state_dict(),
             os.path.join(
                 self.model_output_folder,
-                "{}_checkpoint.pt".format(self.model.__class__.__name__),
+                "{}_checkpoint_{}.pt".format(self.model.__class__.__name__, self.checkpoint_file_suffix),
             ),
         )

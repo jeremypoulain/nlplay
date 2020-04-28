@@ -1,3 +1,8 @@
+"""
+Title   : Bag of Tricks for Efficient Text Classification
+Author  : Joulin, Armand and Grave, Edouard and Bojanowski, Piotr and Mikolov, Tomas
+Papers  : https://arxiv.org/abs/1607.01759
+"""
 import torch
 import torch.nn as nn
 from torch.nn import functional as F, init
@@ -41,13 +46,13 @@ class PytorchFastText(nn.Module):
             self.embedding.weight.requires_grad = update_embedding
 
         self.fc1 = nn.Linear(embedding_size, out_features=num_classes)
-        # nn.init.xavier_uniform_(self.fc1.weight)
-        # nn.init.constant_(self.fc1.bias, 0.1)
 
     def forward(self, x):
+        # global average pooling
         x_embedding = self.embedding(x).mean(dim=1)
         if self.drop_out > 0.0:
             x_embedding = F.dropout(x_embedding, self.drop_out)
+
         out = self.fc1(x_embedding)
         out = F.log_softmax(out, dim=1)
         return out

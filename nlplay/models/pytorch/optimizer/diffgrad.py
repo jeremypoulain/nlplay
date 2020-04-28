@@ -1,3 +1,11 @@
+"""
+Title    : diffGrad: An Optimization Method for Convolutional Neural Networks -2019
+Authors  : Shiv Ram Dubey, Soumendu Chakraborty, Swalpa Kumar Roy, Snehasis Mukherjee, Satish Kumar Singh, Bidyut Baran Chaudhuri
+Papers   : https://arxiv.org/pdf/1909.11015.pdf
+Source   : https://github.com/lessw2020/Best-Deep-Learning-Optimizers/tree/master/diffgrad (Less Wright)
+           https://github.com/shivram1987/diffGrad/blob/master/diffGrad.py
+"""
+
 import math
 import torch
 from torch.optim.optimizer import Optimizer
@@ -5,11 +13,8 @@ from torch.optim.optimizer import Optimizer
 
 class DiffGrad(Optimizer):
     """
-    Original source:  https://github.com/shivram1987/diffGrad/blob/master/diffGrad.py
-    modifications: @lessw2020
-                   https://github.com/lessw2020/Best-Deep-Learning-Optimizers
     Implements diffGrad algorithm. It is modified from the pytorch implementation of Adam.
-    It has been proposed in `diffGrad: An Optimization Method for Convolutional Neural Networks`_.
+    It has been proposed in ``_.
     Arguments:
         params (iterable): iterable of parameters to optimize or dicts defining
             parameter groups
@@ -30,7 +35,9 @@ class DiffGrad(Optimizer):
         https://openreview.net/forum?id=ryQu7f-RZ
     """
 
-    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, version=0, weight_decay=0):
+    def __init__(
+        self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, version=0, weight_decay=0
+    ):
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0.0 <= eps:
@@ -61,40 +68,46 @@ class DiffGrad(Optimizer):
             loss = closure()
 
         for group in self.param_groups:
-            for p in group['params']:
+            for p in group["params"]:
                 if p.grad is None:
                     continue
                 grad = p.grad.data
                 if grad.is_sparse:
-                    raise RuntimeError('diffGrad does not support sparse gradients, please consider SparseAdam instead')
+                    raise RuntimeError(
+                        "diffGrad does not support sparse gradients, please consider SparseAdam instead"
+                    )
 
                 state = self.state[p]
 
                 # State initialization
                 if len(state) == 0:
-                    state['step'] = 0
+                    state["step"] = 0
                     # Exponential moving average of gradient values
-                    state['exp_avg'] = torch.zeros_like(p.data)
+                    state["exp_avg"] = torch.zeros_like(p.data)
                     # Exponential moving average of squared gradient values
-                    state['exp_avg_sq'] = torch.zeros_like(p.data)
+                    state["exp_avg_sq"] = torch.zeros_like(p.data)
                     # Previous gradient
-                    state['previous_grad'] = torch.zeros_like(p.data)
+                    state["previous_grad"] = torch.zeros_like(p.data)
 
-                exp_avg, exp_avg_sq, previous_grad = state['exp_avg'], state['exp_avg_sq'], state['previous_grad']
-                beta1, beta2 = group['betas']
+                exp_avg, exp_avg_sq, previous_grad = (
+                    state["exp_avg"],
+                    state["exp_avg_sq"],
+                    state["previous_grad"],
+                )
+                beta1, beta2 = group["betas"]
 
-                state['step'] += 1
+                state["step"] += 1
 
-                if group['weight_decay'] != 0:
-                    grad.add_(group['weight_decay'], p.data)
+                if group["weight_decay"] != 0:
+                    grad.add_(group["weight_decay"], p.data)
 
                 # Decay the first and second moment running average coefficient
                 exp_avg.mul_(beta1).add_(1 - beta1, grad)
                 exp_avg_sq.mul_(beta2).addcmul_(1 - beta2, grad, grad)
-                denom = exp_avg_sq.sqrt().add_(group['eps'])
+                denom = exp_avg_sq.sqrt().add_(group["eps"])
 
-                bias_correction1 = 1 - beta1 ** state['step']
-                bias_correction2 = 1 - beta2 ** state['step']
+                bias_correction1 = 1 - beta1 ** state["step"]
+                bias_correction2 = 1 - beta2 ** state["step"]
 
                 # compute diffgrad coefficient (dfc)
 
@@ -103,19 +116,21 @@ class DiffGrad(Optimizer):
                 elif self.version == 1:
                     diff = previous_grad - grad
                 elif self.version == 2:
-                    diff = .5 * abs(previous_grad - grad)
+                    diff = 0.5 * abs(previous_grad - grad)
 
                 if self.version == 0 or self.version == 1:
-                    dfc = 1. / (1. + torch.exp(-diff))
+                    dfc = 1.0 / (1.0 + torch.exp(-diff))
                 elif self.version == 2:
-                    dfc = 9. / (1. + torch.exp(-diff)) - 4  # DFC2 = 9/(1+e-(.5/g/)-4 #range .5,5
+                    dfc = (
+                        9.0 / (1.0 + torch.exp(-diff)) - 4
+                    )  # DFC2 = 9/(1+e-(.5/g/)-4 #range .5,5
 
-                state['previous_grad'] = grad
+                state["previous_grad"] = grad
 
                 # update momentum with dfc
                 exp_avg1 = exp_avg * dfc
 
-                step_size = group['lr'] * math.sqrt(bias_correction2) / bias_correction1
+                step_size = group["lr"] * math.sqrt(bias_correction2) / bias_correction1
 
                 p.data.addcdiv_(-step_size, exp_avg1, denom)
 

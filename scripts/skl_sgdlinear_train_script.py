@@ -1,20 +1,17 @@
 import re
 import string
-from pathlib import Path
-import pandas as pd
-import numpy as np
 from pprint import pprint
-from sklearn.metrics import accuracy_score
+import numpy as np
+import pandas as pd
+from hyperopt import fmin, tpe, Trials, space_eval, hp
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import SGDClassifier
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import cross_val_score
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import KFold
-from hyperopt import fmin, tpe, Trials, space_eval, hp
+from sklearn.model_selection import cross_val_score
+from sklearn.pipeline import Pipeline
 from nlplay.features.text_cleaner import base_cleaner
-from nlplay.utils import utils
 from nlplay.utils.parlib import parallelApply
-
 
 if __name__ == "__main__":
 

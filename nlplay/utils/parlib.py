@@ -1,7 +1,7 @@
 """Anthony Ho, ahho@stanford.edu, 8/4/2016
 Last update 8/9/2016
- Library functions for embarrassingly parallelization applying functions to large lists,
- Pandas series, df (by row), and grouped df"""
+Library functions for embarrassingly parallelization applying functions to large lists,
+Pandas series, df (by row), and grouped df"""
 import pandas as pd
 from joblib import Parallel, delayed
 

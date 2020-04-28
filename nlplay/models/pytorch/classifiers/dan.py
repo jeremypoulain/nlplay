@@ -1,15 +1,14 @@
+"""
+Title    : Deep Unordered Composition Rivals Syntactic Methods for Text Classification - 2015
+Authors  : Mohit Iyyer and Varun Manjunatha and Jordan Boyd-Graber and Hal
+Papers   : https://people.cs.umass.edu/~miyyer/pubs/2015_acl_dan.pdf
+"""
 import torch
 import torch.nn as nn
 from torch.nn import functional as F, init
 
 
 class DAN2L(nn.Module):
-    """
-    Deep Averaging Network - DAN with 2Layers
-    Deep Averaging Network - Mohit Iyyer and Varun Manjunatha and Jordan Boyd-Graber and Hal - 2015
-    paper : https://people.cs.umass.edu/~miyyer/pubs/2015_acl_dan.pdf
-    """
-
     def __init__(
         self,
         num_classes: int,

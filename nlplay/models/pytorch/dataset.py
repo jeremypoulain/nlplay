@@ -133,12 +133,6 @@ class CSRDatasetGenerator(object):
         del X, y
 
         train_ds = CSRDataset(self.X_train, self.y_train)
-        train_dl = DataLoader(
-            train_ds,
-            num_workers=self.num_workers,
-            batch_size=self.batch_size,
-            shuffle=True,
-        )
         gc.collect()
 
         if self.test_file is not None:
@@ -154,12 +148,6 @@ class CSRDatasetGenerator(object):
             self.y_test = y
             del X, y
             test_ds = CSRDataset(self.X_test, self.y_test)
-            test_dl = DataLoader(
-                test_ds,
-                num_workers=self.num_workers,
-                batch_size=self.batch_size,
-                shuffle=True,
-            )
             gc.collect()
 
         if self.val_file is not None:  # or val_size > 0.0:
@@ -175,12 +163,6 @@ class CSRDatasetGenerator(object):
             self.y_val = y
             del X, y
             val_ds = CSRDataset(self.X_val, self.y_val)
-            val_dl = DataLoader(
-                val_ds,
-                num_workers=self.num_workers,
-                batch_size=self.batch_size,
-                shuffle=True,
-            )
 
             gc.collect()
 
@@ -190,11 +172,11 @@ class CSRDatasetGenerator(object):
 
         if self.test_file is not None:
             if self.val_file is not None:
-                return train_ds, train_dl, test_ds, test_dl, val_ds, val_dl
+                return train_ds, test_ds, val_ds
             else:
-                return train_ds, train_dl, test_ds, test_dl
+                return train_ds, test_ds
         else:
-            return train_ds, train_dl
+            return train_ds
 
     def from_numpy(
         self,
