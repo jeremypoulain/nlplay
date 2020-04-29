@@ -1,6 +1,5 @@
 import numpy as np
-import torch
-from torch import nn
+from nlplay.models.pytorch.activation import *
 from nlplay.utils.utils import human_readable_size
 
 
@@ -21,6 +20,8 @@ def get_activation_func(activation_func_name: str = "relu"):
         return nn.PReLU()
     elif activation_func_name == "elu":
         return nn.ELU()
+    elif activation_func_name == "gelu":
+        return nn.GELU()
     elif activation_func_name == "selu":
         return nn.SELU()
     elif activation_func_name == "leakyrelu":
@@ -41,6 +42,14 @@ def get_activation_func(activation_func_name: str = "relu"):
         return nn.Softsign()
     elif activation_func_name == "softplus":
         return nn.Softplus()
+    elif activation_func_name == "mish":
+        return Mish()
+    elif activation_func_name == "ftswishplus":
+        return FTSwishPlus()
+    elif activation_func_name == "lightrelu":
+        return LightRelu()
+    elif activation_func_name == "trelu":
+        return TRelu()
     else:
         raise ValueError("[!] Invalid activation function.")
 
@@ -119,4 +128,5 @@ def get_gpu_info(device):
     mem_tot = human_readable_size(torch.cuda.get_device_properties(device).total_memory)
     mem_alloc = human_readable_size(torch.cuda.memory_allocated(device))
     out = "{} - Memory: {} / {}".format(device_name, mem_alloc, mem_tot)
+
     return out
