@@ -16,17 +16,15 @@ try:
 
     IS_AMP_AVAILABLE = True
 except ImportError:
-    import logging
+    # import logging
 
-    logging.basicConfig()
-    logger = logging.getLogger(__name__)
-    logger.warning(
-        "To enable mixed precision training, please install `apex`. "
-        "Or you can re-install this package by the following command:\n"
-        '  pip install torch-lr-finder -v --global-option="amp"'
-    )
+    # logging.basicConfig()
+    # logger = logging.getLogger(__name__)
+    # logger.warning(
+    #     "To enable mixed precision training, please install `apex`. "
+    # )
     IS_AMP_AVAILABLE = False
-    del logging
+    # del logging
 
 
 class LRFinder(object):
