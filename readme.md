@@ -26,15 +26,17 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **AdaBound**  : [Adaptive Gradient Methods with Dynamic Bound of Learning Rate - 2019](https://arxiv.org/pdf/1902.09843)
 -  **DiffGrad**  : [diffGrad: An Optimization Method for Convolutional Neural Networks - 2019](https://arxiv.org/pdf/1909.11015)
 -  **Lookahead** : [Lookahead Optimizer: k steps forward, 1 step back - 2019](https://arxiv.org/pdf/1907.08610)
+-  **QHAdam**    : [Quasi-hyperbolic momentum and Adam for deep learning - 2019](https://arxiv.org/pdf/1810.06801.pdf)
 -  **RAdam**     : [On the Variance of the Adaptive Learning Rate and Beyond - 2020](https://arxiv.org/pdf/1908.03265)
 -  **Ranger**    : [An Adaptive Remote Stochastic Gradient Method for Training Neural Networks - 2019](https://arxiv.org/pdf/1905.01422)
 ## Additional Pytorch Activation Functions
 -  **Mish**           : [Mish: A Self Regularized Non-Monotonic Neural Activation Function - 2019](https://arxiv.org/pdf/1908.08681)
 -  **Swish/SwishPlus**: [Flatten-T Swish: a thresholded ReLU-Swish-like activation function for deep learning - 2019](https://arxiv.org/ftp/arxiv/papers/1812/1812.06247.pdf)
--  **LightRelu**      : [LiSHT: Non-Parametric Linearly Scaled Hyperbolic Tangent Activation Function for Neural Networks - 2019](https://arxiv.org/abs/1901.05894)
+-  **LiSHT/LightRelu**: [LiSHT: Non-Parametric Linearly Scaled Hyperbolic Tangent Activation Function for Neural Networks - 2019](https://arxiv.org/abs/1901.05894)
 -  **Threshold Relu** : [An improved activation function for deep learning - Threshold Relu, or TRelu - 2019](https://github.com/lessw2020/TRelu)
 ## Additional Pytorch loss
 -  **FocalLoss** : [Focal Loss for Dense Object Detection - 2017](https://arxiv.org/pdf/1708.02002)
+-  **LabelSmoothingLoss** [Rethinking the Inception Architecture for Computer Vision - 2015](https://arxiv.org/pdf/1512.00567.pdf)
 ## Datasets
 -  **Sentiment analysis**      : IMDB, MR
 -  **Question classification** : TREC6, TREC50
