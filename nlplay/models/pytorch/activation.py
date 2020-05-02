@@ -1,4 +1,3 @@
-import math
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -18,6 +17,39 @@ class Mish(nn.Module):
 
     def forward(self, input):
         return input * torch.tanh(F.softplus(input))
+
+
+def swish(x, inplace: bool = False):
+    return x.mul_(x.sigmoid()) if inplace else x.mul(x.sigmoid())
+
+
+class Swish(nn.Module):
+    """
+    Title    : Searching for Activation Functions - 2017
+    Authors  : Prajit Ramachandran, Barret Zoph, Quoc V. Le
+    Papers   : https://arxiv.org/abs/1908.08681
+    Source   : https://github.com/rwightman/gen-efficientnet-pytorch/blob/master/geffnet/activations/activations.py
+    """
+    def __init__(self, inplace: bool = False):
+        super(Swish, self).__init__()
+        self.inplace = inplace
+
+    def forward(self, x):
+        return swish(x, self.inplace)
+
+
+def hard_swish(x, inplace: bool = False):
+    inner = F.relu6(x + 3.).div_(6.)
+    return x.mul_(inner) if inplace else x.mul(inner)
+
+
+class HardSwish(nn.Module):
+    def __init__(self, inplace: bool = False):
+        super(HardSwish, self).__init__()
+        self.inplace = inplace
+
+    def forward(self, x):
+        return hard_swish(x, self.inplace)
 
 
 class FTSwishPlus(nn.Module):
@@ -62,9 +94,7 @@ class LightRelu(nn.Module):
 
     def forward(self, x):
         # change to lisht
-
         x = x * torch.tanh(x)
-
         if self.sub is not None:
             x.sub_(self.sub)
         if self.maxv is not None:
@@ -86,8 +116,6 @@ class TRelu(nn.Module):
 
     def forward(self, x):
         x = F.relu(x) + self.threshold
-
         if self.mean_shift is not None:
             x.sub_(self.mean_shift)
-
         return x
