@@ -68,7 +68,6 @@ class RNN(nn.Module):
     def forward(self, x):
         embeddings = self.embedding(x)
 
-        # from the recurrent layer, only take the activities from the last sequence step
         if self.rnn_type == "gru":
             _, rec_out = self.rnn_encoder(embeddings)
         else:
@@ -81,7 +80,6 @@ class RNN(nn.Module):
         if self.drop_out > 0.0:
             out = F.dropout(out, p=self.drop_out)
 
-        # Apply SoftMax
         out = self.fc1(out)
         #out = F.log_softmax(out, dim=-1)
 
