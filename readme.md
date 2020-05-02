@@ -16,8 +16,9 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **FastText**   : [Bag of Tricks for Efficient Text Classification - 2016](https://arxiv.org/abs/1607.01759)
 -  **DAN**        : [Deep Unordered Composition Rivals Syntactic Methods for Text Classification - 2015](https://arxiv.org/abs/1607.01759)
 -  **NBSVM++**    : [Baselines and Bigrams: Simple, Good Sentiment and Topic Classification - 2012](https://www.aclweb.org/anthology/P12-2018.pdf)
--  **SWEM**       : [Baseline Needs More Love: On Simple Word-Embedding-Based Models and Associated Pooling Mechanisms - 2018](https://arxiv.org/pdf/1805.09843.pdf)
 -  **QRNN**       : [Quasi-Recurrent Neural Networks - 2016](https://arxiv.org/pdf/1611.01576)
+-  **SWEM**       : [Baseline Needs More Love: On Simple Word-Embedding-Based Models and Associated Pooling Mechanisms - 2018](https://arxiv.org/pdf/1805.09843.pdf)
+-  **SRU**        : [Simple Recurrent Units for Highly Parallelizable Recurrence - 2017](https://arxiv.org/pdf/1709.02755.pdf)
 -  **LSTM/BiLSTM**: [Long Short Term Memory - 1997](https://www.bioinf.jku.at/publications/older/2604.pdf),
                     [Neural architectures for named entity recognition - 2016](https://arxiv.org/pdf/1603.01360.pdf)
 -  **GRU/BiGRU**  : [Neural Machine Translation by Jointly Learning to Align and Translate - 2014](https://arxiv.org/pdf/1409.0473)
