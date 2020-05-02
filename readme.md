@@ -35,8 +35,8 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **LiSHT/LightRelu**: [LiSHT: Non-Parametric Linearly Scaled Hyperbolic Tangent Activation Function for Neural Networks - 2019](https://arxiv.org/abs/1901.05894)
 -  **Threshold Relu** : [An improved activation function for deep learning - Threshold Relu, or TRelu - 2019](https://github.com/lessw2020/TRelu)
 ## Additional Pytorch loss
--  **FocalLoss** : [Focal Loss for Dense Object Detection - 2017](https://arxiv.org/pdf/1708.02002)
--  **LabelSmoothingLoss** [Rethinking the Inception Architecture for Computer Vision - 2015](https://arxiv.org/pdf/1512.00567.pdf)
+-  **FocalLoss**          : [Focal Loss for Dense Object Detection - 2017](https://arxiv.org/pdf/1708.02002)
+-  **LabelSmoothingLoss** : [Rethinking the Inception Architecture for Computer Vision - 2015](https://arxiv.org/pdf/1512.00567.pdf)
 ## Datasets
 -  **Sentiment analysis**      : IMDB, MR
 -  **Question classification** : TREC6, TREC50
