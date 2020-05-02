@@ -25,12 +25,12 @@ ngram_range = (1, 1)
 max_features = 20000
 max_seq = 200
 rnn_type = "gru"
-rnn_dropout = 0.0
+rnn_dropout = 0.25
 num_layers = 2
 bidirectionnal = True
-embedding_size = 128
+embedding_size = 300
 hidden_size = 128
-lr = 0.01
+lr = 0.0015
 num_workers = 1
 
 # Data preparation
@@ -45,9 +45,8 @@ train_ds, val_ds = ds.from_csv(
     ds_max_seq=max_seq,
 )
 
-# vecs = get_pretrained_vecs(input_vec_file=pretrained_vec, target_vocab=ds.vocab,
-#                            dim=embedding_size, output_file=None)
-
+vecs = get_pretrained_vecs(input_vec_file=pretrained_vec, target_vocab=ds.vocab,
+                           dim=embedding_size, output_file=None)
 model = RNN(
     num_classes=ds.num_classes,
     vocabulary_size=ds.vocab_size,
@@ -56,10 +55,12 @@ model = RNN(
     hidden_size=hidden_size,
     num_layers=num_layers,
     dropout=rnn_dropout,
+    pretrained_vec=vecs,
+    update_embedding=False
 )
 
-criterion = nn.NLLLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 trainer = PytorchModelTrainer(
     model,
     criterion,
@@ -71,3 +72,25 @@ trainer = PytorchModelTrainer(
     epochs=num_epochs,
 )
 trainer.train_evaluate()
+# Model Parameters
+# num_epochs = 40
+# batch_size = 64
+# ngram_range = (1, 1)
+# max_features = 20000
+# max_seq = 200
+# rnn_type = "gru"
+# rnn_dropout = 0.25
+# num_layers = 2
+# bidirectionnal = True
+# embedding_size = 300
+# hidden_size = 128
+# lr = 0.0015
+# num_workers = 1
+# 2020-05-02 14:54:14 ----------------------------------
+# 2020-05-02 14:54:14 ---          SUMMARY           ---
+# 2020-05-02 14:54:14 ----------------------------------
+# 2020-05-02 14:54:14 Number of model parameters : 6265650
+# 2020-05-02 14:54:14 Total Training Time: 1m 25s
+# 2020-05-02 14:54:14 Total Time: 1m 25s
+# 2020-05-02 14:54:14 Best Epoch: 5 - Accuracy Score: 0.861160
+# 2020-05-02 14:54:14 ----------------------------------

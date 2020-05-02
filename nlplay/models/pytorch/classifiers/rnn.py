@@ -83,6 +83,6 @@ class RNN(nn.Module):
 
         # Apply SoftMax
         out = self.fc1(out)
-        out = F.log_softmax(out, dim=-1)
+        #out = F.log_softmax(out, dim=-1)
 
         return out
