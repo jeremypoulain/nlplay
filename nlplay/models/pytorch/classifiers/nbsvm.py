@@ -3,7 +3,7 @@ Title    : Baselines and Bigrams: Simple, Good Sentiment and Topic Classificatio
 Authors  : Sida Wang and Christopher D. Manning
 Papers   : https://www.aclweb.org/anthology/P12-2018.pdf
 Source   : https://www.youtube.com/watch?v=XJ_waZlJU8g&feature=youtu.be&t=43m31s
-           https://gist.github.com/bkj/0e726d59da23d016594fe2317a232f7d
+           https://github.com/fastai/fastai/blob/release-1.0.61/old/fastai/nlp.py
 Note     : This is the customized version of NBSVM, called NBSVM++ , made by Jeremy Howard & Stephen Merity
 """
 import numpy as np
