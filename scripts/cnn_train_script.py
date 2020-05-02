@@ -1,6 +1,7 @@
 import logging
 import torch
 from torch import nn
+from nlplay.data.cache import WordVectorsManager, WV, DSManager, DS
 from nlplay.features.text_cleaner import base_cleaner
 from nlplay.models.pytorch.classifiers.cnn import TextCNN
 from nlplay.models.pytorch.dataset import DSGenerator
@@ -9,21 +10,23 @@ from nlplay.models.pytorch.trainer import PytorchModelTrainer
 
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG, datefmt="%Y-%m-%d %H:%M:%S")
 
-# Model Parameters
-train_csv = "../nlplay/data_cache/IMDB/IMDB_train.csv"
-test_csv = "../nlplay/data_cache/IMDB/IMDB_test.csv"
-pretrained_vec = '../nlplay/data_cache/GLOVE/glove.6B.100d.txt'
+# Input data files
+ds = DSManager(DS.IMDB.value)
+train_csv, test_csv, val_csv = ds.get_partition_paths()
+lm = WordVectorsManager(WV.GLOVE_EN6B_100.value)
+pretrained_vec = lm.get_wv_path()
 
-num_epochs = 5
+# Model Parameters
+num_epochs = 10
 batch_size = 128
 ngram_range = (1, 1)
 max_features = 15000
 max_seq = 600
 embedding_size = 100
 dropout = 0.2
-lr = 0.00075 #0.0019 #0.00055#0.00075
+lr = 0.00075
 num_workers = 1
-filters_num = [100, 100]
+kernel_sizes = [100, 100]
 filters = [3, 2]
 
 # Data preparation
@@ -35,15 +38,15 @@ vecs = get_pretrained_vecs(input_vec_file=pretrained_vec, target_vocab=ds.vocab,
                            dim=embedding_size, output_file=None)
 
 model = TextCNN(vocabulary_size=len(ds.vocab), num_classes=ds.num_classes,
-                model_type='non-static', max_sent_len=max_seq, filters_num=filters_num, filters=filters,
+                model_type='non-static', max_sent_len=max_seq, kernel_sizes=kernel_sizes, filters=filters,
                 embedding_dim=embedding_size, pretrained_vec=vecs)
 
 criterion = nn.NLLLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 trainer = PytorchModelTrainer(model, criterion, optimizer,
-                              train_ds=train_ds, test_ds=val_ds,
+                              train_ds=train_ds, val_ds=val_ds,
                               batch_size=batch_size, n_workers=num_workers, epochs=num_epochs,)
-trainer.train()
+trainer.train_evaluate()
 # 2020-04-25 18:41:35 ----------------------------------
 # 2020-04-25 18:41:35 ---          SUMMARY           ---
 # 2020-04-25 18:41:35 ----------------------------------

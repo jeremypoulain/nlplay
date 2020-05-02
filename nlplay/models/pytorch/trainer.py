@@ -55,7 +55,7 @@ class PytorchModelTrainer(object):
         self.checkpoint_file_suffix = checkpoint_file_suffix
         logging.getLogger(__name__)
 
-    def train(self, seed=42, check_dl=True, run_lr_finder=False):
+    def train_evaluate(self, seed=42, check_dl=True, run_lr_finder=False):
 
         set_seed(seed)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -95,8 +95,8 @@ class PytorchModelTrainer(object):
                 logging.info("   label dimensions: {}".format(labels.shape))
                 break
 
-            for data, labels in self.test_dl:
-                logging.info("Test DataLoader Details:")
+            for data, labels in self.val_dl:
+                logging.info("Val DataLoader Details:")
                 logging.info("   batch dimensions: {}".format(data.shape))
                 logging.info("   label dimensions: {}".format(labels.shape))
                 break
@@ -155,15 +155,15 @@ class PytorchModelTrainer(object):
                         compute_accuracy(self.model, self.train_dl, device=device),
                     )
                 )
-                test_acc = compute_accuracy(self.model, self.test_dl, device=device)
+                val_acc = compute_accuracy(self.model, self.val_dl, device=device)
                 logging.info(
-                    "Epoch: %03d/%03d | Test accuracy: %.6f"
-                    % (epoch + 1, self.n_epochs, test_acc)
+                    "Epoch: %03d/%03d | Val accuracy: %.6f"
+                    % (epoch + 1, self.n_epochs, val_acc)
                 )
                 logging.info("Time elapsed: {}".format(get_elapsed_time(start_time)))
 
                 # early stopping & checkpoint
-                current_score = test_acc
+                current_score = val_acc
                 if self.best_score is None:
                     self.best_score = current_score.to(torch.device("cpu")).numpy()
                     self.best_epoch = epoch + 1

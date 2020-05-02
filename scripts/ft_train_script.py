@@ -1,6 +1,7 @@
 import logging
 import torch
 from torch import nn
+from nlplay.data.cache import DSManager, DS
 from nlplay.features.text_cleaner import *
 from nlplay.models.pytorch.classifiers.fasttext import PytorchFastText
 from nlplay.models.pytorch.dataset import DSGenerator
@@ -8,10 +9,11 @@ from nlplay.models.pytorch.trainer import PytorchModelTrainer
 
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG, datefmt="%Y-%m-%d %H:%M:%S")
 
-# Inputs & Model Parameters
-train_csv = "../nlplay/data_cache/IMDB/IMDB_train.csv"
-test_csv = "../nlplay/data_cache//IMDB/IMDB_test.csv"
+# Input data files
+ds = DSManager(DS.IMDB.value)
+train_csv, test_csv, val_csv = ds.get_partition_paths()
 
+# Inputs & Model Parameters
 num_epochs = 20
 batch_size = 128
 ngram_range = (1, 2)
@@ -35,10 +37,11 @@ criterion = nn.NLLLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 scheduler = None
 # scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer=optimizer, mode="triangular2", base_lr=0.0001, max_lr=lr)
+
 trainer = PytorchModelTrainer(model, criterion, optimizer, lr_scheduler=scheduler,
-                              train_ds=train_ds, test_ds=val_ds,
+                              train_ds=train_ds, val_ds=val_ds,
                               batch_size=batch_size, n_workers=num_workers, epochs=num_epochs)
-trainer.train()
+trainer.train_evaluate()
 
 # num_epochs = 10
 # batch_size = 128

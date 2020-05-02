@@ -1,6 +1,7 @@
 import logging
 import torch
 from torch import nn
+from nlplay.data.cache import WordVectorsManager, WV, DSManager, DS
 from nlplay.features.text_cleaner import base_cleaner
 from nlplay.models.pytorch.classifiers.dpcnn import DPCNN
 from nlplay.models.pytorch.dataset import DSGenerator
@@ -9,11 +10,13 @@ from nlplay.models.pytorch.trainer import PytorchModelTrainer
 
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG, datefmt="%Y-%m-%d %H:%M:%S")
 
-# Model Parameters
-train_csv = "../nlplay/data_cache/IMDB/IMDB_train.csv"
-test_csv = "../nlplay/data_cache/IMDB/IMDB_test.csv"
-pretrained_vec = '../nlplay/data_cache/GLOVE/glove.6B.100d.txt'
+# Input data files
+ds = DSManager(DS.IMDB.value)
+train_csv, test_csv, val_csv = ds.get_partition_paths()
+lm = WordVectorsManager(WV.GLOVE_EN6B_100.value)
+pretrained_vec = lm.get_wv_path()
 
+# Model Parameters
 num_epochs = 5
 batch_size = 128
 ngram_range = (1, 1)
@@ -40,6 +43,6 @@ model = DPCNN(vocabulary_size=len(ds.vocab), num_classes=ds.num_classes, embeddi
 criterion = nn.NLLLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 trainer = PytorchModelTrainer(model, criterion, optimizer,
-                              train_ds=train_ds, test_ds=val_ds,
+                              train_ds=train_ds, val_ds=val_ds,
                               batch_size=batch_size, n_workers=num_workers, epochs=num_epochs,)
-trainer.train()
+trainer.train_evaluate()

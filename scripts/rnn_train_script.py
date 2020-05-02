@@ -1,6 +1,7 @@
 import logging
 import torch
 from torch import nn
+from nlplay.data.cache import WordVectorsManager, DSManager, DS, WV
 from nlplay.features.text_cleaner import *
 from nlplay.models.pytorch.classifiers.rnn import RNN
 from nlplay.models.pytorch.dataset import DSGenerator
@@ -11,23 +12,25 @@ logging.basicConfig(
     format="%(asctime)s %(message)s", level=logging.DEBUG, datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-# Inputs & Model Parameters
-pretrained_vec = "../nlplay/data_cache/GLOVE/glove.6B.100d.txt"
-train_csv = "../nlplay/data_cache/IMDB/IMDB_train.csv"
-test_csv = "../nlplay/data_cache/IMDB/IMDB_test.csv"
+# Input data files
+ds = DSManager(DS.IMDB.value)
+train_csv, test_csv, val_csv = ds.get_partition_paths()
+lm = WordVectorsManager(WV.GLOVE_EN6B_300.value)
+pretrained_vec = lm.get_wv_path()
 
+# Model Parameters
 num_epochs = 40
 batch_size = 64
 ngram_range = (1, 1)
 max_features = 20000
 max_seq = 200
-rnn_type = "LSTM"
-rnn_dropout = 0.3
+rnn_type = "gru"
+rnn_dropout = 0.0
 num_layers = 2
-bidirectionnal = False
+bidirectionnal = True
 embedding_size = 128
 hidden_size = 128
-lr = 0.001
+lr = 0.01
 num_workers = 1
 
 # Data preparation
@@ -62,9 +65,9 @@ trainer = PytorchModelTrainer(
     criterion,
     optimizer,
     train_ds=train_ds,
-    test_ds=val_ds,
+    val_ds=val_ds,
     batch_size=batch_size,
     n_workers=num_workers,
     epochs=num_epochs,
 )
-trainer.train()
+trainer.train_evaluate()

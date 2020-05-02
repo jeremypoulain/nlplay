@@ -1,6 +1,7 @@
 import logging
 import torch
 from torch import nn
+from nlplay.data.cache import WordVectorsManager, WV, DS, DSManager
 from nlplay.models.pytorch.classifiers.qrnn import QRNN
 from nlplay.models.pytorch.pretrained import get_pretrained_vecs
 from nlplay.features.text_cleaner import *
@@ -11,12 +12,15 @@ from nlplay.utils import utils
 
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG, datefmt="%Y-%m-%d %H:%M:%S")
 
-# Model Parameters
-pretrained_vec = '../nlplay/data_cache/pretrained_vec/glove.6B.100d.txt'
-train_csv = "../nlplay/data_cache/IMDB/IMDB_train.csv"
-test_csv = "../nlplay/data_cache/IMDB/IMDB_test.csv"
+# Input data files
+ds = DSManager(DS.IMDB.value)
+train_csv, test_csv, val_csv = ds.get_partition_paths()
+lm = WordVectorsManager(WV.GLOVE_EN6B_100.value)
+pretrained_vec = lm.get_wv_path()
 
-num_epochs = 6
+
+# Model Parameters
+num_epochs = 10
 batch_size = 64
 ngram_range = (1, 1)
 max_features = 20000
@@ -41,9 +45,9 @@ model = QRNN(num_classes=ds.num_classes, vocabulary_size=ds.vocab_size,
 criterion = nn.NLLLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 trainer = PytorchModelTrainer(model, criterion, optimizer,
-                              train_ds=train_ds, test_ds=val_ds,
+                              train_ds=train_ds, val_ds=val_ds,
                               batch_size=batch_size, n_workers=num_workers, epochs=num_epochs)
-trainer.train()
+trainer.train_evaluate()
 # 2020-01-12 16:19:23 ----------------------------------
 # 2020-01-12 16:19:23 ---          SUMMARY           ---
 # 2020-01-12 16:19:23 ----------------------------------

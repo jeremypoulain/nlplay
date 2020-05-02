@@ -114,11 +114,6 @@ class CSRDatasetGenerator(object):
         )
 
         df = pd.read_csv(self.train_file, sep=sep, encoding=encoding, header=header)
-        X = df[df.columns[self.text_col_idx]].tolist()
-        y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int)
-        del df
-
-        df = pd.read_csv(self.train_file, sep=sep, encoding=encoding, header=header)
         if preprocess_func is not None:
             df[df.columns[self.text_col_idx]] = parallelApply(
                 df[df.columns[self.text_col_idx]], preprocess_func, preprocess_ncore
@@ -126,6 +121,7 @@ class CSRDatasetGenerator(object):
         X = df[df.columns[self.text_col_idx]].tolist()
         y = df[df.columns[self.label_col_idx]].to_numpy(float)
         del df
+
         self.X_train = self.vectorizer.fit_transform(X)
         self.y_train = y
         self.vocab_size = len([v for k, v in self.vectorizer.vocabulary_.items()])
@@ -159,7 +155,7 @@ class CSRDatasetGenerator(object):
             X = df[df.columns[self.text_col_idx]].tolist()
             y = df[df.columns[self.label_col_idx]].to_numpy(float)
             del df
-            self.X_val = self.self.vectorizer.transform(X)
+            self.X_val = self.vectorizer.transform(X)
             self.y_val = y
             del X, y
             val_ds = CSRDataset(self.X_val, self.y_val)
@@ -170,11 +166,11 @@ class CSRDatasetGenerator(object):
             "Data Preparation Completed - Time elapsed: " + get_elapsed_time(start_time)
         )
 
-        if self.test_file is not None:
-            if self.val_file is not None:
+        if self.val_file is not None:
+            if self.test_file is not None:
                 return train_ds, test_ds, val_ds
             else:
-                return train_ds, test_ds
+                return train_ds, val_ds
         else:
             return train_ds
 
@@ -421,12 +417,11 @@ class NBSVMDatasetGenerator(object):
         logging.info(
             "Data Preparation Completed - Time elapsed: " + get_elapsed_time(start_time)
         )
-
-        if self.test_file is not None:
-            if self.val_file is not None:
+        if self.val_file is not None:
+            if self.test_file is not None:
                 return self.r, train_ds, test_ds, val_ds
             else:
-                return self.r, train_ds, test_ds
+                return self.r, train_ds, val_ds
         else:
             return self.r, train_ds
 
@@ -468,9 +463,9 @@ class NBSVMDatasetGenerator(object):
             "Data Import Completed - Time elapsed: " + get_elapsed_time(start_time)
         )
 
-        if val_data_file is not None:
-            if test_data_file is not None:
-                return self.r, train_ds, val_ds, test_ds
+        if self.val_file is not None:
+            if self.test_file is not None:
+                return self.r, train_ds, test_ds, val_ds
             else:
                 return self.r, train_ds, val_ds
         else:
@@ -888,7 +883,7 @@ class DSGenerator(object):
         del df
 
         if val_size > 0.0 and self.val_file is None:
-            # create valid partition from train partition,keeping class distribution
+            # create valid partition from train partition, keeping class distribution
             X_train, X_val, y_train, y_val = train_test_split(
                 X, y, stratify=y, test_size=val_size, random_state=self.seed
             )

@@ -1,4 +1,4 @@
-cache: ./data_cache
+data_cache_path: "{home}/nlplay_data_cache"
 datasets:
     20_NEWS:
       name: 20_NEWS.tar.gz
@@ -10,6 +10,8 @@ datasets:
       header: 0
       train_file: 20_newsgroup_train.csv
       test_file: 20_newsgroup_test.csv
+      val_file: None
+      label_file: 20_newsgroup_labels.csv
     AG_NEWS:
       name: AG_NEWS.tar.gz
       url: 0Bz8a_Dbh9QhbUDNpeUdjb0wxRms
@@ -231,3 +233,9 @@ pretrained_vectors:
       wv_file: glove.840B.300d.txt
       dim: 300
       size: -1
+    WORD2VEC:
+      url: 0B7XkCwpI5KDYNlNUTTlSS21pQmM
+      type_url: gdrive
+      wv_file: GoogleNews-vectors-negative300.bin
+      dim: 300
+      size: 1647046227

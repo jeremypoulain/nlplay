@@ -1,6 +1,3 @@
-# Data folder
-/nlplay/data_cache/
-
 # Pycharm config
 .idea
 .idea/workspace.xml
@@ -98,5 +95,5 @@ celerybeat-schedule
 venv/
 ENV/
 
-
+# personal data repository
 /_private/

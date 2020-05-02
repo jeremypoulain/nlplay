@@ -62,5 +62,6 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
     -  Include [Nvidia Apex - Mixed Precision](https://github.com/NVIDIA/apex) to improve GPU memory footprint
     -  Include Cross validation mechanism
     -  Include Metrics (F1,AUC...) + Confusion Matrix
-    -  Include [Microsoft NNI](https://github.com/microsoft/nni) for Hyper Parameters Tuning 
+    -  Include [Microsoft NNI](https://github.com/microsoft/nni) for Hyper Parameters Tuning ([TPE](https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf),
+     [SMAC](https://www.cs.ubc.ca/~hutter/papers/10-TR-SMAC.pdf), [Hyperband](https://arxiv.org/pdf/1603.06560.pdf), [BOHB](https://www.automl.org/blog_bohb/)... )
     -  Include [MLflow](https://www.mlflow.org/docs/latest/index.html#) for Experiments tracking

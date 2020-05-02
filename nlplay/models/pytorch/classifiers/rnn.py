@@ -38,10 +38,15 @@ class RNN(nn.Module):
         if update_embedding:
             self.embedding.weight.requires_grad = update_embedding
 
+        if bidirectional:
+            h_size = hidden_size * 2
+        else:
+            h_size = hidden_size
+
         if self.rnn_type == "lstm":
             self.rnn_encoder = nn.LSTM(
                 input_size=embedding_size,
-                hidden_size=hidden_size,
+                hidden_size=h_size,
                 num_layers=num_layers,
                 batch_first=True,
                 bidirectional=bidirectional,
@@ -50,7 +55,7 @@ class RNN(nn.Module):
         elif self.rnn_type == "gru":
             self.rnn_encoder = nn.GRU(
                 input_size=embedding_size,
-                hidden_size=hidden_size,
+                hidden_size=h_size,
                 num_layers=num_layers,
                 batch_first=True,
                 bidirectional=bidirectional,
@@ -58,7 +63,7 @@ class RNN(nn.Module):
         else:
             raise NotImplementedError
 
-        self.fc1 = nn.Linear(hidden_size, num_classes)
+        self.fc1 = nn.Linear(h_size, num_classes)
 
     def forward(self, x):
         embeddings = self.embedding(x)
@@ -70,14 +75,14 @@ class RNN(nn.Module):
             _, (rec_out, _) = self.rnn_encoder(embeddings)
 
         # Take the output of last RNN layer
-        rec_out = rec_out[-1]
+        out = rec_out[-1]
 
         # Apply dropout regularization
         if self.drop_out > 0.0:
-            drop = F.dropout(rec_out, p=self.drop_out)
+            out = F.dropout(out, p=self.drop_out)
 
         # Apply SoftMax
-        out = self.fc1(drop)
+        out = self.fc1(out)
         out = F.log_softmax(out, dim=-1)
 
         return out
