@@ -46,8 +46,8 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **Question classification** : [TREC6, TREC50](https://trec.nist.gov/data/qa.html)
 -  **Text classification**     : [20 newsgroups](http://qwone.com/~jason/20Newsgroups/), [AGNews](http://groups.di.unipi.it/~gulli/AG_corpus_of_news_articles.html), [Amazon Review Polarity, Amazon Review Full](https://s3.amazonaws.com/amazon-reviews-pds/readme.html) , [DBpedia](https://wiki.dbpedia.org/Datasets), [Yelp Review Polarity, Yelp Review Full](https://www.yelp.com/dataset), Sogou News, Yahoo Answers 
 ## Others
-- Parallel Processing for large lists (ie corpus pre-processing), Pandas DataFrames or Series, using [joblib](https://joblib.readthedocs.io/en/latest/)
-- Automatic reference and download of key datasets & pretrained vectors (Glove, FastText...)
+- [**parlib**](https://github.com/jeremypoulain/nlplay/blob/master/nlplay/utils/parlib.py)    : Parallel Processing for large lists (ie corpus pre-processing), Pandas DataFrames or Series, using [joblib](https://joblib.readthedocs.io/en/latest/)
+- [**DSManager / WordVectorsManager**](https://github.com/jeremypoulain/nlplay/blob/master/nlplay/data/cache.py) : Automatic reference and download of key datasets & pretrained vectors (Glove, FastText...)
 
 ## Examples
 
