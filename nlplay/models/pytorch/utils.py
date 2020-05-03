@@ -60,7 +60,7 @@ def embeddings_to_cosine_similarity_matrix(embedding: torch.Tensor):
     Authors  : Dillon Erb - https://github.com/dte
     Papers   : ---
     Source   : https://gist.github.com/dte/e600bb76e72854379f4a306c1873f2c2#file-vectorized_cosine_similarities-py
-  """
+    """
     dot = embedding @ embedding.t()
     norm = torch.norm(embedding, 2, 1)
     x = torch.div(dot, norm)
@@ -70,7 +70,12 @@ def embeddings_to_cosine_similarity_matrix(embedding: torch.Tensor):
 
 class LockedDropout(torch.nn.Module):
     """
-    Implementation of locked (or variational) dropout. Randomly drops out entire parameters in embedding space.
+    Title    : A Theoretically Grounded Application of Dropout in Recurrent Neural Networks
+    Authors  : Yarin Gal, Zoubin Ghahramani
+    Papers   : https://arxiv.org/pdf/1512.05287.pdf
+    Source   : https://github.com/flairNLP/flair/blob/master/flair/nn.py
+    Note     : Implementation of locked (or variational) dropout.
+               Randomly drops out entire parameters in embedding space.
     """
 
     def __init__(self, dropout_rate=0.5, batch_first=True, inplace=False):
@@ -99,7 +104,12 @@ class LockedDropout(torch.nn.Module):
 
 class WordDropout(torch.nn.Module):
     """
-    Implementation of word dropout. Randomly drops out entire words (or characters) in embedding space.
+    Title    : A Theoretically Grounded Application of Dropout in Recurrent Neural Networks
+    Authors  : Yarin Gal, Zoubin Ghahramani
+    Papers   : https://arxiv.org/pdf/1512.05287.pdf
+    Source   : https://github.com/flairNLP/flair/blob/master/flair/nn.py
+    Note     : Implementation of word dropout.
+               Randomly drops out entire words (or characters) in embedding space.
     """
 
     def __init__(self, dropout_rate=0.05, inplace=False):
@@ -110,9 +120,7 @@ class WordDropout(torch.nn.Module):
     def forward(self, x):
         if not self.training or not self.dropout_rate:
             return x
-
         m = x.data.new(x.size(0), x.size(1), 1).bernoulli_(1 - self.dropout_rate)
-
         mask = torch.autograd.Variable(m, requires_grad=False)
         return mask * x
 

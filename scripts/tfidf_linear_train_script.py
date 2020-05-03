@@ -5,7 +5,7 @@ from torch import nn
 
 from nlplay.data.cache import DSManager, DS
 from nlplay.features.text_cleaner import base_cleaner
-from nlplay.models.pytorch.classifiers.linear import LinearModel
+from nlplay.models.pytorch.classifiers.linear import SMLinearModel
 from nlplay.models.pytorch.dataset import CSRDatasetGenerator
 from nlplay.models.pytorch.trainer import PytorchModelTrainer
 
@@ -35,7 +35,7 @@ train_ds, val_ds = ds.from_csv(train_file=train_csv, val_file=test_csv, ngram_ra
                                sublinear_tf=sublinear_tf, stop_words=stop_words,
                                preprocess_func=base_cleaner, preprocess_ncore=3)
 
-model = LinearModel(input_size=ds.vocab_size, num_classes=ds.num_classes)
+model = SMLinearModel(input_size=ds.vocab_size, num_classes=ds.num_classes)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 

@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 
 try:
     from apex import amp
-
     IS_AMP_AVAILABLE = True
 except ImportError:
     # import logging
@@ -307,7 +306,7 @@ class LRFinder(object):
 
         return running_loss / len(dataloader.dataset)
 
-    def plot(self, skip_start=10, skip_end=5, log_lr=True, show_lr=None, ax=None):
+    def plot(self, skip_start=10, skip_end=5, log_lr=True, show_lr=None, ax=None, show = False, output_path=None):
         """Plots the learning rate range test.
 
         Arguments:
@@ -362,9 +361,10 @@ class LRFinder(object):
             ax.axvline(x=show_lr, color="red")
 
         # Show only if the figure was created internally
-        if fig is not None:
+        if fig is not None and show:
             plt.show()
-
+        if output_path is not None:
+            plt.savefig(output_path, format='png')
         return ax
 
 

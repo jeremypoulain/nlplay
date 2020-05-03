@@ -1,8 +1,9 @@
 import logging
 import os
 import time
-from pathlib import Path
 import torch
+from datetime import datetime
+from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
 from nlplay.models.pytorch.lr_finder import LRFinder
 from nlplay.models.pytorch.utils import set_seed, get_gpu_info
@@ -26,7 +27,7 @@ class PytorchModelTrainer(object):
         model_output_folder: Path = "",
         checkpoint_file_suffix: str = "",
         early_stopping=True,
-        early_stopping_patience: int = 3
+        early_stopping_patience: int = 3,
     ):
 
         self.model = model
@@ -44,6 +45,7 @@ class PytorchModelTrainer(object):
         self.test_dl = None
         self.val_dl = None
 
+        self.train_loss_hist = []
         self.apply_early_stopping = early_stopping
         self.early_stop = False
         self.best_score = None
@@ -80,8 +82,14 @@ class PytorchModelTrainer(object):
             lr_finder = LRFinder(
                 self.model, self.optimizer, criterion=self.criterion, device=device
             )
-            lr_finder.range_test(self.train_dl, end_lr=100, num_iter=100)
-            lr_finder.plot(show=False, folder_path="../../")
+            lr_finder.range_test(self.train_dl, start_lr=10e-6, end_lr=1, num_iter=100)
+            lr_finder.plot(
+                show=False,
+                output_path="LR_finder_{}_{}.png".format(
+                    self.model.__class__.__name__,
+                    datetime.now().strftime("%Y%m%d_%H%M%S"),
+                ),
+            )
             logging.info("LR Finder Run Completed....")
 
         # Checking the dataloaders
@@ -128,8 +136,9 @@ class PytorchModelTrainer(object):
                 self.optimizer.zero_grad()
 
                 # forward + backward + optimize
-                outputs = self.model(batch_train_data,)
+                outputs = self.model(batch_train_data)
                 loss = self.criterion(outputs, batch_train_labels)
+                self.train_loss_hist.append(loss.item())
                 loss.backward()
                 self.optimizer.step()
                 if self.lr_scheduler is not None:
@@ -206,6 +215,8 @@ class PytorchModelTrainer(object):
             self.model.state_dict(),
             os.path.join(
                 self.model_output_folder,
-                "{}_checkpoint_{}.pt".format(self.model.__class__.__name__, self.checkpoint_file_suffix),
+                "{}_checkpoint_{}.pt".format(
+                    self.model.__class__.__name__, self.checkpoint_file_suffix
+                ),
             ),
         )
