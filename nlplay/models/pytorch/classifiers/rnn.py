@@ -81,6 +81,6 @@ class RNN(nn.Module):
             out = F.dropout(out, p=self.drop_out)
 
         out = self.fc1(out)
-        #out = F.log_softmax(out, dim=-1)
+        #out = F.log_softmax(out, dim=1)
 
         return out

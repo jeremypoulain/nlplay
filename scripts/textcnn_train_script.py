@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from nlplay.data.cache import WordVectorsManager, WV, DSManager, DS
 from nlplay.features.text_cleaner import base_cleaner
-from nlplay.models.pytorch.classifiers.cnn import TextCNN
+from nlplay.models.pytorch.classifiers.textcnn import TextCNN
 from nlplay.models.pytorch.dataset import DSGenerator
 from nlplay.models.pytorch.pretrained import get_pretrained_vecs
 from nlplay.models.pytorch.trainer import PytorchModelTrainer

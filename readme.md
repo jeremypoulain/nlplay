@@ -1,7 +1,7 @@
 # NLPlay
 
 ## What is NLPlay?
-NLPlay is a repository centralizing implementations of key NLP algorithms ,to tackle Text Classification, Sentiment Analysis & Question Answering problems.
+NLPlay is a toolbox / repository, centralizing implementations of key NLP algorithms ,to tackle Text Classification, Sentiment Analysis & Question Answering problems.
 The idea is to have a collection of ready to use algorithms & building blocks , to allow people to perform rapid benchmarks over standard datasets or their own ones.  
 
 ## Supported models & features
@@ -12,9 +12,11 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **NBSVM**      : [Baselines and Bigrams: Simple, Good Sentiment and Topic Classification - 2012](https://www.aclweb.org/anthology/P12-2018.pdf)
 
 ### Pytorch (CPU/GPU)
--  **CNN**        : [Convolutional Neural Networks for Sentence Classification - 2014](https://arxiv.org/abs/1607.01759) - Source : [Galsang](https://github.com/galsang/CNN-sentence-classification-pytorch)
+-  **CharCNN**    : [Character-level Convolutional Networks for Text Classification - 2015](https://arxiv.org/pdf/1509.01626.pdf) 
+-  **TextCNN**    : [Convolutional Neural Networks for Sentence Classification - 2014](https://arxiv.org/abs/1607.01759) - Source : [Galsang](https://github.com/galsang/CNN-sentence-classification-pytorch)
 -  **FastText**   : [Bag of Tricks for Efficient Text Classification - 2016](https://arxiv.org/abs/1607.01759)
 -  **DAN**        : [Deep Unordered Composition Rivals Syntactic Methods for Text Classification - 2015](https://arxiv.org/abs/1607.01759)
+-  **MLP**        : A model with an embedding layer coupled with a dynamically configurable feed-forward neural network
 -  **NBSVM++**    : [Baselines and Bigrams: Simple, Good Sentiment and Topic Classification - 2012](https://www.aclweb.org/anthology/P12-2018.pdf) - Source : [FastAI](https://github.com/fastai/fastai/blob/release-1.0.61/old/fastai/nlp.py) 
 -  **DPCNN**      : [Deep Pyramid Convolutional Neural Networks for Text Categorization - 2017](https://ai.tencent.com/ailab/media/publications/ACL3-Brady.pdf) - Source : [Cheneng](https://github.com/Cheneng/DPCNN/blob/master/model/DPCNN.py)
 -  **QRNN**       : [Quasi-Recurrent Neural Networks - 2016](https://arxiv.org/pdf/1611.01576) - Source : [Dragonfly](https://github.com/dreamgonfly/deep-text-classification-pytorch)
@@ -40,9 +42,12 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **FocalLoss**          : [Focal Loss for Dense Object Detection - 2017](https://arxiv.org/pdf/1708.02002) - Source : [mbsariyildiz](https://github.com/mbsariyildiz/focal-loss.pytorch)
 -  **LabelSmoothingLoss** : [Rethinking the Inception Architecture for Computer Vision - 2015](https://arxiv.org/pdf/1512.00567.pdf) - Source : [OpenNMT](https://github.com/OpenNMT/OpenNMT-py/blob/master/onmt/utils/loss.py)
 ## Datasets
--  **Sentiment analysis**      : IMDB, MR
--  **Question classification** : TREC6, TREC50
--  **Text classification**     : 20 newsgroups, AGNews, Amazon Review Polarity, Amazon Review Full , DBpedia, Yelp Review Polarity, Yelp Review Full, Sogou News, Yahoo Answers 
+-  **Sentiment analysis**      : [IMDB](http://ai.stanford.edu/~amaas/data/sentiment/), [MR](http://www.cs.cornell.edu/people/pabo/movie-review-data/)
+-  **Question classification** : [TREC6, TREC50](https://trec.nist.gov/data/qa.html)
+-  **Text classification**     : [20 newsgroups](http://qwone.com/~jason/20Newsgroups/), [AGNews](http://groups.di.unipi.it/~gulli/AG_corpus_of_news_articles.html), [Amazon Review Polarity, Amazon Review Full](https://s3.amazonaws.com/amazon-reviews-pds/readme.html) , [DBpedia](https://wiki.dbpedia.org/Datasets), [Yelp Review Polarity, Yelp Review Full](https://www.yelp.com/dataset), Sogou News, Yahoo Answers 
+## Others
+- Parallel Processing for large lists (ie corpus pre-processing), Pandas DataFrames or Series, using [joblib](https://joblib.readthedocs.io/en/latest/)
+- Automatic reference and download of key datasets & pretrained vectors (Glove, FastText...)
 
 ## Examples
 
@@ -66,6 +71,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
     -  Include [Nvidia Apex - Mixed Precision](https://github.com/NVIDIA/apex) to improve GPU memory footprint
     -  Include Cross validation mechanism
     -  Include Metrics (F1,AUC...) + Confusion Matrix
+    -  Include automatic [EDA](https://towardsdatascience.com/exploratory-data-analysis-8fc1cb20fd15) reporting features 
     -  Include [Microsoft NNI](https://github.com/microsoft/nni) for Hyper Parameters Tuning ([TPE](https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf),
      [SMAC](https://www.cs.ubc.ca/~hutter/papers/10-TR-SMAC.pdf), [Hyperband](https://arxiv.org/pdf/1603.06560.pdf), [BOHB](https://www.automl.org/blog_bohb/)... )
     -  Include [MLflow](https://www.mlflow.org/docs/latest/index.html#) for Experiments tracking
