@@ -1,8 +1,8 @@
 # NLPlay
 
 ## What is NLPlay?
-NLPlay is a toolbox / repository, centralizing implementations of key NLP algorithms ,to tackle Text Classification, Sentiment Analysis & Question Answering problems.
-The idea is to have a collection of ready to use algorithms & building blocks , to allow people to perform rapid benchmarks over standard datasets or their own ones.  
+NLPlay is a toolbox / repository, centralizing implementations of key NLP algorithms in one place,to tackle Text Classification, Sentiment Analysis & Question Answering problems.
+The idea is to have a collection of ready to use algorithms & building blocks , to allow people to quickly benchmark/customize those different model architectures, over standard datasets or their own ones.  
 
 ## Supported models & features
 
@@ -44,7 +44,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 ## Datasets
 -  **Sentiment analysis**      : [IMDB](http://ai.stanford.edu/~amaas/data/sentiment/), [MR](http://www.cs.cornell.edu/people/pabo/movie-review-data/)
 -  **Question classification** : [TREC6, TREC50](https://trec.nist.gov/data/qa.html)
--  **Text classification**     : [20 newsgroups](http://qwone.com/~jason/20Newsgroups/), [AGNews](http://groups.di.unipi.it/~gulli/AG_corpus_of_news_articles.html), [Amazon Review Polarity, Amazon Review Full](https://s3.amazonaws.com/amazon-reviews-pds/readme.html) , [DBpedia](https://wiki.dbpedia.org/Datasets), [Yelp Review Polarity, Yelp Review Full](https://www.yelp.com/dataset), Sogou News, Yahoo Answers 
+-  **Text classification**     : [20 newsgroups](http://qwone.com/~jason/20Newsgroups/), [AGNews](http://groups.di.unipi.it/~gulli/AG_corpus_of_news_articles.html), [Amazon Review Polarity, Amazon Review Full](https://s3.amazonaws.com/amazon-reviews-pds/readme.html) , [DBpedia](https://wiki.dbpedia.org/Datasets), [Yelp Review Polarity, Yelp Review Full](https://www.yelp.com/dataset), [Sogou News](http://wwwconference.org/www2008/papers/pdf/p457-wang.pdf), [Yahoo Answers](https://webscope.sandbox.yahoo.com/catalog.php?datatype=l) 
 ## Others
 - [**parlib**](https://github.com/jeremypoulain/nlplay/blob/master/nlplay/utils/parlib.py)    : Parallel Processing for large lists (ie corpus pre-processing), Pandas DataFrames or Series, using [joblib](https://joblib.readthedocs.io/en/latest/)
 - [**DSManager / WordVectorsManager**](https://github.com/jeremypoulain/nlplay/blob/master/nlplay/data/cache.py) : Automatic reference and download of key datasets & pretrained vectors (Glove, FastText...)
@@ -55,11 +55,12 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 
 ## Todo / Next Steps:
 1. Include additional Models :
-    -  **HAN**   : [Hierarchical Attention Networks for Document Classification - 2016](https://www.aclweb.org/anthology/N16-1174.pdf)
-    -  **SIF**   : [A Simple but Tough-to-Beat Baseline for Sentence Embeddings - 2016](https://openreview.net/forum?id=SyK00v5xx)
-    -  **USIF**  : [Unsupervised Random Walk Sentence Embeddings: A Strong but Simple Baseline - 2018](https://www.aclweb.org/anthology/W18-3012.pdf)
-    -  **RE2**   : [Simple and Effective Text Matching with Richer Alignment Features - 2019](https://arxiv.org/pdf/1908.00300)
-    -  **BiMPM** : [Bilateral Multi-Perspective Matching for Natural Language Sentences - 2017](https://arxiv.org/pdf/1702.03814)
+    -  **HAN**          : [Hierarchical Attention Networks for Document Classification - 2016](https://www.aclweb.org/anthology/N16-1174.pdf)
+    -  **SIF**          : [A Simple but Tough-to-Beat Baseline for Sentence Embeddings - 2016](https://openreview.net/forum?id=SyK00v5xx)
+    -  **USIF**         : [Unsupervised Random Walk Sentence Embeddings: A Strong but Simple Baseline - 2018](https://www.aclweb.org/anthology/W18-3012.pdf)
+    -  **RE2**          : [Simple and Effective Text Matching with Richer Alignment Features - 2019](https://arxiv.org/pdf/1908.00300)
+    -  **BiMPM**        : [Bilateral Multi-Perspective Matching for Natural Language Sentences - 2017](https://arxiv.org/pdf/1702.03814)
+    -  **MaLSTM/MaGRU** : [Siamese Recurrent Architectures for Learning Sentence Similarity - 2016](https://www.aaai.org/ocs/index.php/AAAI/AAAI16/paper/download/12195/12023)
 
 2. Include additional Datasets :
     -  **SNLI**    : [The Stanford Natural Language Inference (SNLI) Corpus](https://nlp.stanford.edu/projects/snli/)
@@ -68,7 +69,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
     -  **WikiQA**  : [WikiQA: A Challenge Dataset for Open-Domain Question Answering](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/YangYihMeek_EMNLP-15_WikiQA.pdf)
 
 3. Others :
-    -  Include [Nvidia Apex - Mixed Precision](https://github.com/NVIDIA/apex) to improve GPU memory footprint
+    -  Include [Nvidia Apex - Mixed Precision](https://github.com/NVIDIA/apex) to improve GPU memory footprint on Turing/Volta/Ampere architectures
     -  Include Cross validation mechanism
     -  Include Metrics (F1,AUC...) + Confusion Matrix
     -  Include automatic [EDA](https://towardsdatascience.com/exploratory-data-analysis-8fc1cb20fd15) reporting features 
