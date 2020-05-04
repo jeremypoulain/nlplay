@@ -68,19 +68,20 @@ class RNN(nn.Module):
     def forward(self, x):
         embeddings = self.embedding(x)
 
+        # https://pytorch.org/docs/stable/nn.html#torch.nn.LSTM
+        # If (h_0, c_0) is not provided, both h_0 and c_0 default to zero
         if self.rnn_type == "gru":
-            _, rec_out = self.rnn_encoder(embeddings)
+            output, h_n = self.rnn_encoder(embeddings)
         else:
-            _, (rec_out, _) = self.rnn_encoder(embeddings)
+            output, (h_n, c_n) = self.rnn_encoder(embeddings)
 
         # Take the output of last RNN layer
-        out = rec_out[-1]
+        out = h_n[-1]
 
         # Apply dropout regularization
         if self.drop_out > 0.0:
             out = F.dropout(out, p=self.drop_out)
 
         out = self.fc1(out)
-        #out = F.log_softmax(out, dim=1)
 
         return out
