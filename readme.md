@@ -69,7 +69,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
     -  **WikiQA**  : [WikiQA: A Challenge Dataset for Open-Domain Question Answering](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/YangYihMeek_EMNLP-15_WikiQA.pdf)
 
 3. Others :
-    -  Include [Nvidia Apex - Mixed Precision](https://github.com/NVIDIA/apex) to improve GPU memory footprint on Turing/Volta/Ampere architectures
+    -  <s>Include [Nvidia Apex - Mixed Precision](https://github.com/NVIDIA/apex) to improve GPU memory footprint on Turing/Volta/Ampere architectures</s>
     -  Include Cross validation mechanism
     -  Include Metrics (F1,AUC...) + Confusion Matrix
     -  Include automatic [EDA](https://towardsdatascience.com/exploratory-data-analysis-8fc1cb20fd15) reporting features 
