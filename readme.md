@@ -16,7 +16,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **TextCNN**    : [Convolutional Neural Networks for Sentence Classification - 2014](https://arxiv.org/abs/1607.01759) - Source : [Galsang](https://github.com/galsang/CNN-sentence-classification-pytorch)
 -  **FastText**   : [Bag of Tricks for Efficient Text Classification - 2016](https://arxiv.org/abs/1607.01759)
 -  **DAN**        : [Deep Unordered Composition Rivals Syntactic Methods for Text Classification - 2015](https://arxiv.org/abs/1607.01759)
--  **MLP**        : A model with an embedding layer coupled with a dynamically configurable feed-forward neural network
+-  **MLP**        : A model with a embedding layer and a configurable pooling & feed-forward neural network on top
 -  **NBSVM++**    : [Baselines and Bigrams: Simple, Good Sentiment and Topic Classification - 2012](https://www.aclweb.org/anthology/P12-2018.pdf) - Source : [FastAI](https://github.com/fastai/fastai/blob/release-1.0.61/old/fastai/nlp.py) 
 -  **DPCNN**      : [Deep Pyramid Convolutional Neural Networks for Text Categorization - 2017](https://ai.tencent.com/ailab/media/publications/ACL3-Brady.pdf) - Source : [Cheneng](https://github.com/Cheneng/DPCNN/blob/master/model/DPCNN.py)
 -  **QRNN**       : [Quasi-Recurrent Neural Networks - 2016](https://arxiv.org/pdf/1611.01576) - Source : [Dragonfly](https://github.com/dreamgonfly/deep-text-classification-pytorch)
