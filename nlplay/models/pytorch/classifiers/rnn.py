@@ -1,3 +1,16 @@
+"""
+Title    : Long Short Term Memory - 1997 (LSTM)
+Authors  : Sepp Hochreiter, Jurgen Schmidhuber
+Papers   : https://www.bioinf.jku.at/publications/older/2604.pdf
+
+Title    : Neural architectures for named entity recognition - 2016 (BiLSTM)
+Authors  : Guillaume Lample, Miguel Ballesteros, Sandeep Subramanian, Kazuya Kawakami, Chris Dyer
+Papers   : https://arxiv.org/abs/1603.01360
+
+Title    : Neural Machine Translation by Jointly Learning to Align and Translate - 2014 (GRU)
+Authors  : Dzmitry Bahdanau, Kyunghyun Cho, Yoshua Bengio
+Papers   : https://arxiv.org/abs/1409.0473
+"""
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
@@ -19,6 +32,19 @@ class RNN(nn.Module):
         update_embedding: bool = True,
         padding_idx: int = 0,
     ):
+        """
+        Args:
+            num_classes (int) : number of classes
+            vocabulary_size (int): number of items in the vocabulary
+            embedding_size (int): size of the embeddings
+            hidden_size: (int) :
+            num_layers: (int) :
+            bidirectional: (bool) :
+            dropout (float) : default 0.2; drop out rate applied to the embedding layer
+            pretrained_vec (nd.array): default None : numpy matrix containing pretrained word vectors
+            update_embedding: bool = True, (boolean) : default False : option to freeze/don't train embedding layer
+            padding_idx (int): default 0; Embedding will not use this index
+        """
         super().__init__()
 
         self.rnn_type = rnn_type.lower()

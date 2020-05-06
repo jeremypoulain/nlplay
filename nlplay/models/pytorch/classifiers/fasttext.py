@@ -27,8 +27,7 @@ class PytorchFastText(nn.Module):
             padding_idx (int): default 0; Embedding will not use this index
             drop_out (float) : default 0.2; drop out rate applied to the embedding layer
             pretrained_vec (nd.array): default None : numpy matrix containing pretrained word vectors
-            freeze_embedding (boolean) : default False : option to freeze/don't train embedding layer
-
+            update_embedding: bool = True, (boolean) : default False : option to freeze/don't train embedding layer
         """
         super(PytorchFastText, self).__init__()
         self.drop_out = drop_out

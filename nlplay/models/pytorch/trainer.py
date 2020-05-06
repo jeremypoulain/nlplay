@@ -10,6 +10,12 @@ from nlplay.models.pytorch.utils import set_seed, get_gpu_info
 from nlplay.models.pytorch.metrics import compute_accuracy
 from nlplay.utils.utils import get_elapsed_time
 
+try:
+    from apex import amp
+    APEX_AVAILABLE = True
+except ModuleNotFoundError:
+    APEX_AVAILABLE = False
+
 
 class PytorchModelTrainer(object):
     def __init__(
@@ -28,6 +34,8 @@ class PytorchModelTrainer(object):
         checkpoint_file_suffix: str = "",
         early_stopping=True,
         early_stopping_patience: int = 3,
+        use_mixed_precision: bool = False,
+        apex_opt_level: str = "O0",
     ):
 
         self.model = model
@@ -55,6 +63,19 @@ class PytorchModelTrainer(object):
         self.es_improvement_delta = 0
         self.model_output_folder = model_output_folder
         self.checkpoint_file_suffix = checkpoint_file_suffix
+
+        if use_mixed_precision:
+            if APEX_AVAILABLE and torch.cuda.is_available():
+                # We can use Nvidia Apex mixed precision mode
+                self.apex = True
+                self.apex_opt_level = apex_opt_level
+                self.model, self.optimizer = amp.initialize(
+                    self.model, self.optimizer, opt_level=self.apex_opt_level
+                )
+        else:
+            self.apex = False
+            self.apex_opt_level = None
+
         logging.getLogger(__name__)
 
     def train_evaluate(self, seed=42, check_dl=True, run_lr_finder=False):
@@ -139,7 +160,13 @@ class PytorchModelTrainer(object):
                 outputs = self.model(batch_train_data)
                 loss = self.criterion(outputs, batch_train_labels)
                 self.train_loss_hist.append(loss.item())
-                loss.backward()
+
+                if self.apex:
+                    with amp.scale_loss(loss, self.optimizer) as scaled_loss:
+                        scaled_loss.backward()
+                else:
+                    loss.backward()
+
                 self.optimizer.step()
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
@@ -211,12 +238,28 @@ class PytorchModelTrainer(object):
 
     def save_checkpoint(self):
         """Saves model when validation loss decrease."""
-        torch.save(
-            self.model.state_dict(),
-            os.path.join(
-                self.model_output_folder,
-                "{}_checkpoint_{}.pt".format(
-                    self.model.__class__.__name__, self.checkpoint_file_suffix
+        if self.apex:
+            checkpoint = {
+                "model": self.model.state_dict(),
+                "optimizer": self.optimizer.state_dict(),
+                "amp": amp.state_dict(),
+            }
+            torch.save(
+                checkpoint,
+                os.path.join(
+                    self.model_output_folder,
+                    "{}_checkpoint_{}.pt".format(
+                        self.model.__class__.__name__, self.checkpoint_file_suffix
+                    ),
                 ),
-            ),
-        )
+            )
+        else:
+            torch.save(
+                self.model.state_dict(),
+                os.path.join(
+                    self.model_output_folder,
+                    "{}_checkpoint_{}.pt".format(
+                        self.model.__class__.__name__, self.checkpoint_file_suffix
+                    ),
+                ),
+            )
