@@ -19,7 +19,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **CharCNN**    : [Character-level Convolutional Networks for Text Classification - 2015](https://arxiv.org/pdf/1509.01626.pdf) 
 -  **TextCNN**    : [Convolutional Neural Networks for Sentence Classification - 2014](https://arxiv.org/pdf/1408.5882.pdf) - Source : [Galsang](https://github.com/galsang/CNN-sentence-classification-pytorch)
 -  **DPCNN**      : [Deep Pyramid Convolutional Neural Networks for Text Categorization - 2017](https://ai.tencent.com/ailab/media/publications/ACL3-Brady.pdf) - Source : [Cheneng](https://github.com/Cheneng/DPCNN/blob/master/model/DPCNN.py)
--  **QRNN**       : [Quasi-Recurrent Neural Networks - 2016](https://arxiv.org/pdf/1611.01576) - Source : [Dragonfly](https://github.com/dreamgonfly/deep-text-classification-pytorch)
+-  **QRNN**       : [Quasi-Recurrent Neural Networks - 2016](https://arxiv.org/pdf/1611.01576) - Source : [Dreamgonfly](https://github.com/dreamgonfly/deep-text-classification-pytorch)
 -  **SWEM**       : [Baseline Needs More Love: On Simple Word-Embedding-Based Models and Associated Pooling Mechanisms - 2018](https://arxiv.org/pdf/1805.09843.pdf)
 -  **SRU**        : [Simple Recurrent Units for Highly Parallelizable Recurrence - 2017](https://arxiv.org/pdf/1709.02755.pdf) - Source : [Asappresearch](https://github.com/asappresearch/sru)
 -  **LSTM/BiLSTM**: [Long Short Term Memory - 1997](https://www.bioinf.jku.at/publications/older/2604.pdf),

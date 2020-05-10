@@ -46,13 +46,13 @@ class DS(Enum):
 
 class WordVectorsManager(object):
     """
-    Class to automatically download & send a Glove/Fasttext/... pretrained vectors text file
+    Class to automatically download & send back a Glove/Fasttext/... pretrained vectors text file
     """
     def __init__(self, model_name=WV.FASTTEXT_ENWIKI_300.value, ft_language_code="da"):
         self.model_name = model_name
         self.ft_language_code = ft_language_code.lower()
-        self.module_folder = Path(os.path.abspath(__file__)).parent
-        self.config_file = os.path.join(self.module_folder, "cache_config.yml")
+        self.module_folder = Path(os.path.abspath(__file__)).parent.parent
+        self.config_file = os.path.join(self.module_folder, "config", "cache_config.yml")
         self.cfg = utils.read_config(self.config_file)
         logging.getLogger(__name__)
 
@@ -174,10 +174,13 @@ class WordVectorsManager(object):
 
 
 class DSManager(object):
+    """
+    Class to automatically download & send back a dataset csv files
+    """
     def __init__(self, dataset_name=DS.IMDB.value):
         self.dataset_name = dataset_name
-        self.module_folder = Path(os.path.abspath(__file__)).parent
-        self.config_file = os.path.join(self.module_folder, "cache_config.yml")
+        self.module_folder = Path(os.path.abspath(__file__)).parent.parent
+        self.config_file = os.path.join(self.module_folder, "config", "cache_config.yml")
         self.cfg = utils.read_config(self.config_file)
         logging.getLogger(__name__)
 

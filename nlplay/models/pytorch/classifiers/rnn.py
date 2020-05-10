@@ -29,7 +29,7 @@ class RNN(nn.Module):
         bidirectional: bool = False,
         dropout: float = 0.2,
         pretrained_vec=None,
-        update_embedding: bool = True,
+        update_embedding: bool = False,
         padding_idx: int = 0,
     ):
         """
@@ -81,7 +81,7 @@ class RNN(nn.Module):
         elif self.rnn_type == "gru":
             self.rnn_encoder = nn.GRU(
                 input_size=embedding_size,
-                hidden_size=h_size,
+                hidden_size=hidden_size,
                 num_layers=num_layers,
                 batch_first=True,
                 bidirectional=bidirectional,

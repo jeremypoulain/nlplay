@@ -23,6 +23,7 @@ class CharCNN_Zhang(nn.Module):
             out_channels = 256
             linear_out_dim = 1024
         else:
+            out_channels = 1024
             linear_out_dim = 2048
 
         # Definition of the 6 Convolution layers
