@@ -96,6 +96,7 @@ def base_aggresive_cleaner(text: str):
     text = blingf_tokenizer(text)
     return text
 
+
 def ft_cleaner(text: str):
     """
     text cleaning function used in FastText Paper

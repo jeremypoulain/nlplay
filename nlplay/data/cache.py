@@ -45,6 +45,9 @@ class DS(Enum):
 
 
 class WordVectorsManager(object):
+    """
+    Class to automatically download & send a Glove/Fasttext/... pretrained vectors text file
+    """
     def __init__(self, model_name=WV.FASTTEXT_ENWIKI_300.value, ft_language_code="da"):
         self.model_name = model_name
         self.ft_language_code = ft_language_code.lower()

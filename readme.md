@@ -7,17 +7,17 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 ## Supported models & features
 
 ### Python/Sklearn (CPU Only)
--  **TFIDF / BOW + linear Model** : [A statistical interpretation of term specificity and its application in retrieval - 1972](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.115.8343&rep=rep1&type=pdf)
+-  **TFIDF Ngrams + SGD linear Model** : [A statistical interpretation of term specificity and its application in retrieval - 1972](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.115.8343&rep=rep1&type=pdf)
 -  **FastText**   : [Bag of Tricks for Efficient Text Classification - 2016](https://arxiv.org/abs/1607.01759)
 -  **NBSVM**      : [Baselines and Bigrams: Simple, Good Sentiment and Topic Classification - 2012](https://www.aclweb.org/anthology/P12-2018.pdf)
 
 ### Pytorch (CPU/GPU)
--  **CharCNN**    : [Character-level Convolutional Networks for Text Classification - 2015](https://arxiv.org/pdf/1509.01626.pdf) 
--  **TextCNN**    : [Convolutional Neural Networks for Sentence Classification - 2014](https://arxiv.org/abs/1607.01759) - Source : [Galsang](https://github.com/galsang/CNN-sentence-classification-pytorch)
 -  **FastText**   : [Bag of Tricks for Efficient Text Classification - 2016](https://arxiv.org/abs/1607.01759)
 -  **DAN**        : [Deep Unordered Composition Rivals Syntactic Methods for Text Classification - 2015](https://arxiv.org/abs/1607.01759)
--  **MLP**        : A model with a embedding layer and a configurable pooling & feed-forward neural network on top
+-  **MLP**        : A model based on an embedding layer and a configurable pooling & feed-forward neural network on top
 -  **NBSVM++**    : [Baselines and Bigrams: Simple, Good Sentiment and Topic Classification - 2012](https://www.aclweb.org/anthology/P12-2018.pdf) - Source : [FastAI](https://github.com/fastai/fastai/blob/release-1.0.61/old/fastai/nlp.py) 
+-  **CharCNN**    : [Character-level Convolutional Networks for Text Classification - 2015](https://arxiv.org/pdf/1509.01626.pdf) 
+-  **TextCNN**    : [Convolutional Neural Networks for Sentence Classification - 2014](https://arxiv.org/pdf/1408.5882.pdf) - Source : [Galsang](https://github.com/galsang/CNN-sentence-classification-pytorch)
 -  **DPCNN**      : [Deep Pyramid Convolutional Neural Networks for Text Categorization - 2017](https://ai.tencent.com/ailab/media/publications/ACL3-Brady.pdf) - Source : [Cheneng](https://github.com/Cheneng/DPCNN/blob/master/model/DPCNN.py)
 -  **QRNN**       : [Quasi-Recurrent Neural Networks - 2016](https://arxiv.org/pdf/1611.01576) - Source : [Dragonfly](https://github.com/dreamgonfly/deep-text-classification-pytorch)
 -  **SWEM**       : [Baseline Needs More Love: On Simple Word-Embedding-Based Models and Associated Pooling Mechanisms - 2018](https://arxiv.org/pdf/1805.09843.pdf)
@@ -70,6 +70,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 
 3. Others :
     -  <s>Include [Nvidia Apex - Mixed Precision](https://github.com/NVIDIA/apex) to improve GPU memory footprint on Turing/Volta/Ampere architectures</s>
+    -  Include support of [Google TPU](https://cloud.google.com/tpu/docs/tpus) for training & inference via [PyTorch/XLA](https://github.com/pytorch/xla)
     -  Include Cross validation mechanism
     -  Include Metrics (F1,AUC...) + Confusion Matrix
     -  Include automatic [EDA](https://towardsdatascience.com/exploratory-data-analysis-8fc1cb20fd15) reporting features 

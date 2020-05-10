@@ -1,0 +1,17 @@
+numpy=>1.17.4
+pandas
+python=>3.7
+pytorch
+scikit-learn
+pyarrow>=0.15.1
+fasttext==0.9.2
+tqdm
+pytest
+blingfire
+beautifulsoup4
+matplotlib
+hyperopt
+requests
+PyYAML
+matplotlib
+keras_preprocessing

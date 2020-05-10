@@ -17,17 +17,17 @@ lm = WordVectorsManager(WV.GLOVE_EN6B_100.value)
 pretrained_vec = lm.get_wv_path()
 
 # Model Parameters
-num_epochs = 10
+num_epochs = 20
 batch_size = 128
 ngram_range = (1, 1)
 max_features = 15000
 max_seq = 600
 embedding_size = 100
 dropout = 0.2
-lr = 0.00075
+lr = 0.00055
 num_workers = 1
 kernel_sizes = [100, 100]
-filters = [3, 2]
+filters = [2, 3]
 
 # Data preparation
 ds = DSGenerator()
@@ -47,11 +47,11 @@ trainer = PytorchModelTrainer(model, criterion, optimizer,
                               train_ds=train_ds, val_ds=val_ds,
                               batch_size=batch_size, n_workers=num_workers, epochs=num_epochs,)
 trainer.train_evaluate()
-# 2020-04-25 18:41:35 ----------------------------------
-# 2020-04-25 18:41:35 ---          SUMMARY           ---
-# 2020-04-25 18:41:35 ----------------------------------
-# 2020-04-25 18:41:35 Number of model parameters : 1551002
-# 2020-04-25 18:41:35 Total Training Time: 0m 30s
-# 2020-04-25 18:41:35 Total Time: 0m 30s
-# 2020-04-25 18:41:35 Best Epoch: 4 - Accuracy Score: 0.864760
-# 2020-04-25 18:41:35 ----------------------------------
+# 2020-05-09 10:26:47 ----------------------------------
+# 2020-05-09 10:26:47 ---          SUMMARY           ---
+# 2020-05-09 10:26:47 ----------------------------------
+# 2020-05-09 10:26:47 Number of model parameters : 1551002
+# 2020-05-09 10:26:47 Total Training Time: 0m 59s
+# 2020-05-09 10:26:47 Total Time: 0m 59s
+# 2020-05-09 10:26:47 Best Epoch: 7 - Accuracy Score: 0.868640
+# 2020-05-09 10:26:47 ----------------------------------
