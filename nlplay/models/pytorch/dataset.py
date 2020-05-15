@@ -831,6 +831,8 @@ class DSGenerator(object):
         self.X_val = None
         self.y_val = None
 
+        self.params = {}
+
         logging.getLogger(__name__)
 
     def from_csv(
@@ -956,6 +958,26 @@ class DSGenerator(object):
         logging.info(
             "Data Preparation Completed - Time elapsed: " + get_elapsed_time(start_time)
         )
+
+        self.params = {
+            "seed": self.seed,
+            "train_file": self.train_file,
+            "test_file": self.test_file,
+            "val_file": self.val_file,
+            "vocab_size":  self.vocab_size,
+            "preprocess_ncore": preprocess_ncore,
+            "stop_words": stop_words,
+            "max_features": max_features,
+            "ngram_range": ngram_range,
+            "min_df": min_df,
+            "max_df": max_df,
+            "ds_max_seq": ds_max_seq,
+            "num_classes": self.num_classes
+        }
+        if preprocess_func is not None:
+            self.params.update({"preprocess_func": preprocess_func.__name__})
+        else:
+            self.params.update({"preprocess_func": None})
 
         if self.val_file is not None:
             if self.test_file is not None:

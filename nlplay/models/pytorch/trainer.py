@@ -2,6 +2,7 @@ import logging
 import os
 import time
 import torch
+import numpy as np
 from datetime import datetime
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
@@ -53,7 +54,7 @@ class PytorchModelTrainer(object):
         self.test_dl = None
         self.val_dl = None
 
-        self.train_loss_hist = []
+        self.all_train_loss_hist = []
         self.apply_early_stopping = early_stopping
         self.early_stop = False
         self.best_score = None
@@ -137,13 +138,15 @@ class PytorchModelTrainer(object):
             p.numel() for p in self.model.parameters() if p.requires_grad
         )
 
-        n_iters = len(self.train_ds) / self.batch_size
+        n_iters = round(len(self.train_ds) / self.batch_size)
         logging.info("Number of iterations/epoch : {}".format(n_iters))
         log_interval = 10
 
         # Loop over epochs
         start_time = time.time()
         for epoch in range(self.n_epochs):
+            train_losses = []
+            losses = []
             self.model.train()
             for batch_index, (batch_train_data, batch_train_labels) in enumerate(
                 self.train_dl
@@ -156,27 +159,35 @@ class PytorchModelTrainer(object):
                 # zero the parameter gradients
                 self.optimizer.zero_grad()
 
-                # forward + backward + optimize
+                # forward pass
                 outputs = self.model(batch_train_data)
                 loss = self.criterion(outputs, batch_train_labels)
-                self.train_loss_hist.append(loss.item())
+                # Store loss values
+                self.all_train_loss_hist.append(loss.item())
+                losses.append(loss.item())
 
+                # Computes gradient
                 if self.apex:
                     with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                         scaled_loss.backward()
                 else:
                     loss.backward()
 
+                # Update model parameters
                 self.optimizer.step()
+                # Adjust learning rate / scheduler if specified
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
 
                 # Report intermediate loss value after a certain amount of batches
-                if (batch_index + 1) % log_interval == 0:
+                if batch_index % log_interval == 0:
+                    avg_train_loss = np.mean(losses)
+                    train_losses.append(avg_train_loss)
                     logging.info(
-                        "   Info | Epoch: %03d/%03d | Batch %04d/%04d | Loss: %.6f"
-                        % (epoch + 1, self.n_epochs, batch_index + 1, n_iters, loss)
+                        "   Info | Epoch: %03d/%03d | Batch %04d/%04d | Average Loss: %.6f"
+                        % (epoch + 1, self.n_epochs, batch_index + 1, n_iters, avg_train_loss)
                     )
+                    losses = []
 
             logging.info("   Info | " + get_gpu_info(device))
 
@@ -223,9 +234,9 @@ class PytorchModelTrainer(object):
                     self.es_counter = 0
 
         # Final results
-        logging.info("----------------------------------")
-        logging.info("---          SUMMARY           ---")
-        logging.info("----------------------------------")
+        logging.info("------------------------------------------")
+        logging.info("---              SUMMARY               ---")
+        logging.info("------------------------------------------")
         logging.info("Number of model parameters : {}".format(model_parameters_count))
         logging.info("Total Training Time: {}".format(get_elapsed_time(start_time)))
         logging.info("Total Time: {}".format(get_elapsed_time(start_time)))
@@ -234,7 +245,7 @@ class PytorchModelTrainer(object):
                 self.best_epoch, self.best_score
             )
         )
-        logging.info("----------------------------------")
+        logging.info("------------------------------------------")
 
     def save_checkpoint(self):
         """Saves model when validation loss decrease."""
