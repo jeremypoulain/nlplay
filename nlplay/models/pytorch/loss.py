@@ -10,17 +10,30 @@ class FocalLoss(nn.Module):
     Papers   : https://www.aclweb.org/anthology/P12-2018.pdf
     Source   : https://github.com/mbsariyildiz/focal-loss.pytorch
     """
-    def __init__(self, gamma=0, alpha=None, size_average=True):
+
+    def __init__(self, gamma: int = 0, alpha: float = 0.5, size_average: bool = True):
         super(FocalLoss, self).__init__()
+
+        # default parameters
         self.gamma = gamma
         self.alpha = alpha
-        if isinstance(alpha, (float, int)):
-            self.alpha = torch.Tensor([alpha, 1 - alpha])
-        if isinstance(alpha, list):
-            self.alpha = torch.Tensor(alpha)
         self.size_average = size_average
 
+        assert (
+            self.alpha <= 1 and self.alpha >= 0
+        ), "The parameter alpha in Focal Loss must be in range [0, 1]."
+
+        if self.alpha is not None:
+            self.alpha = torch.Tensor([self.alpha, 1 - self.alpha])
+
     def forward(self, input, target):
+        """ Get focal loss
+        Args:
+            input (Variable):  the prediction with shape [batch_size, number of classes]
+            target (Variable): the answer with shape [batch_size, number of classes]
+        Returns:
+            Variable (float): loss
+        """
         if input.dim() > 2:
             input = input.view(input.size(0), input.size(1), -1)  # N,C,H,W => N,C,H*W
             input = input.transpose(1, 2)                         # N,C,H*W => N,H*W,C
@@ -30,7 +43,7 @@ class FocalLoss(nn.Module):
         logpt = F.log_softmax(input, dim=1)
         logpt = logpt.gather(1, target)
         logpt = logpt.view(-1)
-        pt = logpt.exp()
+        pt = logpt.data.exp()
 
         if self.alpha is not None:
             if self.alpha.type() != input.data.type():
@@ -38,7 +51,7 @@ class FocalLoss(nn.Module):
             at = self.alpha.gather(0, target.data.view(-1))
             logpt = logpt * at
 
-        loss = -1 * (1 - pt)**self.gamma * logpt
+        loss = -1 * (1 - pt) ** self.gamma * logpt
         if self.size_average:
             return loss.mean()
         else:
@@ -54,6 +67,7 @@ class LabelSmoothingLoss(nn.Module):
     Note     : With label smoothing,KL-divergence between q_{smoothed ground truth prob.}(w)
                and p_{prob. computed by model}(w) is minimized.
     """
+
     def __init__(self, label_smoothing, tgt_vocab_size, ignore_index=-100):
         assert 0.0 < label_smoothing <= 1.0
         self.ignore_index = ignore_index
@@ -62,7 +76,7 @@ class LabelSmoothingLoss(nn.Module):
         smoothing_value = label_smoothing / (tgt_vocab_size - 2)
         one_hot = torch.full((tgt_vocab_size,), smoothing_value)
         one_hot[self.ignore_index] = 0
-        self.register_buffer('one_hot', one_hot.unsqueeze(0))
+        self.register_buffer("one_hot", one_hot.unsqueeze(0))
 
         self.confidence = 1.0 - label_smoothing
 
@@ -75,7 +89,7 @@ class LabelSmoothingLoss(nn.Module):
         model_prob.scatter_(1, target.unsqueeze(1), self.confidence)
         model_prob.masked_fill_((target == self.ignore_index).unsqueeze(1), 0)
 
-        return F.kl_div(output, model_prob, reduction='sum')
+        return F.kl_div(output, model_prob, reduction="sum")
 
 
 class MultiClassHingeLoss(nn.Module):
@@ -90,6 +104,7 @@ class MultiClassHingeLoss(nn.Module):
           To overcome this obstacle, people proposed squared hinge loss h2(x)=max(0,1-x)^2. In this case,
           h2'(1-delta)=h2'(1+delta)=0
     """
+
     def __init__(self, p=1, margin=1, weight=None, size_average=True):
         super(MultiClassHingeLoss, self).__init__()
         self.p = p
@@ -98,7 +113,9 @@ class MultiClassHingeLoss(nn.Module):
         self.size_average = size_average
 
     def forward(self, output, y):
-        output_y = output[torch.arange(0, y.size()[0]).long(), y.data].view(-1, 1)  # view for transpose
+        output_y = output[torch.arange(0, y.size()[0]).long(), y.data].view(
+            -1, 1
+        )  # view for transpose
         # margin - output[y] + output[i]
         loss = output - output_y + self.margin  # contains i=y
         # remove i=y items

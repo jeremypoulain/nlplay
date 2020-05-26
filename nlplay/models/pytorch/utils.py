@@ -241,3 +241,37 @@ def get_gpu_info(device):
     out = "{} - Memory: {} / {}".format(device_name, mem_alloc, mem_tot)
 
     return out
+
+
+def char_vectorizer(X, vocab, max_seq: int = 1014):
+    """
+    Function to transform input sentences into a one encoded matrix
+    of a form [Sentence Index x Sentence Length x Vocabulary size],
+    so that it can be directly fed into a Conv1D layer
+
+    :param X: list of input sentences to be processed
+    :param vocab: dict of characters to be taken into account for the vectorization
+    :param max_seq: limit the max of a sentence
+    :return: (nd.array): vectorized sentences
+    """
+
+    # TODO - Optimize this code as part of the Dataset/Vectorizer future refactoring
+    vocab_size = len(vocab)
+    output = np.zeros((len(X), max_seq, vocab_size))
+    for i, sentence in enumerate(X):
+        counter = 0
+        sentence_vec = np.zeros((max_seq, vocab_size))
+        chars = list(sentence.lower().replace(" ", ""))
+        for c in chars:
+            if counter >= max_seq:
+                pass
+            else:
+                char_array = np.zeros(vocab_size, dtype=np.int)
+                if c in vocab.keys():
+                    ix = vocab[c]
+                    char_array[ix] = 1
+                sentence_vec[counter, :] = char_array
+                counter += 1
+        output[i, :, :] = sentence_vec
+
+    return output
