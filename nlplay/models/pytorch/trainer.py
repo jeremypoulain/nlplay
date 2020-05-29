@@ -32,6 +32,7 @@ class PytorchModelTrainer(object):
         n_workers: int = 1,
         epochs: int = 5,
         model_output_folder: Path = "",
+        max_grad_clip_norm: float = None,
         checkpoint_file_suffix: str = "",
         early_stopping=True,
         early_stopping_patience: int = 3,
@@ -64,6 +65,7 @@ class PytorchModelTrainer(object):
         self.es_improvement_delta = 0
         self.model_output_folder = model_output_folder
         self.checkpoint_file_suffix = checkpoint_file_suffix
+        self.max_grad_clip_norm = max_grad_clip_norm
 
         if use_mixed_precision:
             if APEX_AVAILABLE and torch.cuda.is_available():
@@ -172,6 +174,10 @@ class PytorchModelTrainer(object):
                         scaled_loss.backward()
                 else:
                     loss.backward()
+
+                # Gradient Clipping
+                if self.max_grad_clip_norm is not None:
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_clip_norm)
 
                 # Update model parameters
                 self.optimizer.step()

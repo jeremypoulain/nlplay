@@ -1,4 +1,6 @@
 import numpy as np
+import torch.nn as nn
+import torch.nn.functional as F
 from nlplay.models.pytorch.activation import *
 from nlplay.utils.utils import human_readable_size
 
@@ -255,7 +257,7 @@ def char_vectorizer(X, vocab, max_seq: int = 1014):
     :return: (nd.array): vectorized sentences
     """
 
-    # TODO - Optimize this code as part of the Dataset/Vectorizer future refactoring
+    # TODO - Optimize this code as part of the upcoming Dataset/Vectorizer refactoring
     vocab_size = len(vocab)
     output = np.zeros((len(X), max_seq, vocab_size))
     for i, sentence in enumerate(X):

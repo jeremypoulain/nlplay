@@ -40,15 +40,18 @@ class CharCNN_Zhang(nn.Module):
         )
 
         self.conv3 = nn.Sequential(
-            nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3), nn.ReLU()
+            nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3),
+            nn.ReLU()
         )
 
         self.conv4 = nn.Sequential(
-            nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3), nn.ReLU()
+            nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3),
+            nn.ReLU()
         )
 
         self.conv5 = nn.Sequential(
-            nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3), nn.ReLU()
+            nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3),
+            nn.ReLU()
         )
 
         self.conv6 = nn.Sequential(
