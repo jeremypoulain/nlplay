@@ -73,7 +73,8 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
     -  Include support of [Google TPU](https://cloud.google.com/tpu/docs/tpus) for training & inference via [PyTorch/XLA](https://github.com/pytorch/xla)
     -  Include Cross validation mechanism
     -  Include Metrics (F1,AUC...) + Confusion Matrix
-    -  Include automatic [EDA](https://towardsdatascience.com/exploratory-data-analysis-8fc1cb20fd15) reporting features 
+    -  Include automatic [EDA](https://towardsdatascience.com/exploratory-data-analysis-8fc1cb20fd15) reporting features
+    -  Include a [streamlit](https://towardsdatascience.com/coding-ml-tools-like-you-code-ml-models-ddba3357eace) app to easily explore & debug model predictions errors and identify potential root causes (ie tokenization, unseen tokens, sentence length,class confusion..)  
     -  Include [Microsoft NNI](https://github.com/microsoft/nni) for Hyper Parameters Tuning ([TPE](https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf),
      [SMAC](https://www.cs.ubc.ca/~hutter/papers/10-TR-SMAC.pdf), [Hyperband](https://arxiv.org/pdf/1603.06560.pdf), [BOHB](https://www.automl.org/blog_bohb/)... )
     -  Include [MLflow](https://www.mlflow.org/docs/latest/index.html#) for Experiments tracking
