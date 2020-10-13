@@ -1,7 +1,7 @@
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from nlplay.models.pytorch.activation import *
+from nlplay.models.pytorch.activations import *
 from nlplay.utils.utils import human_readable_size
 
 

@@ -333,13 +333,14 @@ class DSManager(object):
                         os.remove(dl_dest_file)
                         logging.info("Archive Deletion Completed!")
 
-                    self._apply_post_dl_reformating()
+                    self._apply_post_dl_reformating(self.dataset_name)
 
     def _apply_post_dl_reformating(self, dataset_name=DS.IMDB.value):
         if dataset_name is not None:
             self.dataset_name = dataset_name
         nfo = self._get_ds_info()
         text_col = nfo["text_col"]
+        lbl_col = nfo["lbl_col"]
 
         if dataset_name in [
             DS.AG_NEWS.value,
@@ -376,6 +377,9 @@ class DSManager(object):
                 df_test[df_test.columns[text_col]] = (
                     df_test[df_test.columns[1]] + " " + df_test[df_test.columns[2]]
                 )
+
+            df_train = df_train[[df_train.columns[lbl_col], df_train.columns[text_col]]]
+            df_test = df_test[[df_test.columns[lbl_col], df_test.columns[text_col]]]
 
             df_train.to_csv(
                 nfo["train_file_path"],
