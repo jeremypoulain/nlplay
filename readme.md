@@ -18,6 +18,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **NBSVM++**    : [Baselines and Bigrams: Simple, Good Sentiment and Topic Classification - 2012](https://www.aclweb.org/anthology/P12-2018.pdf) - Source : [FastAI](https://github.com/fastai/fastai/blob/release-1.0.61/old/fastai/nlp.py) 
 -  **CharCNN**    : [Character-level Convolutional Networks for Text Classification - 2015](https://arxiv.org/pdf/1509.01626.pdf) 
 -  **TextCNN**    : [Convolutional Neural Networks for Sentence Classification - 2014](https://arxiv.org/pdf/1408.5882.pdf) - Source : [Galsang](https://github.com/galsang/CNN-sentence-classification-pytorch)
+-  **EXAM**       : [Explicit Interaction Model towards Text Classification - 2018](https://arxiv.org/pdf/1811.09386.pdf) - !UNDER DEVELOPMENT!
 -  **DPCNN**      : [Deep Pyramid Convolutional Neural Networks for Text Categorization - 2017](https://ai.tencent.com/ailab/media/publications/ACL3-Brady.pdf) - Source : [Cheneng](https://github.com/Cheneng/DPCNN/blob/master/model/DPCNN.py)
 -  **QRNN**       : [Quasi-Recurrent Neural Networks - 2016](https://arxiv.org/pdf/1611.01576) - Source : [Dreamgonfly](https://github.com/dreamgonfly/deep-text-classification-pytorch)
 -  **SWEM**       : [Baseline Needs More Love: On Simple Word-Embedding-Based Models and Associated Pooling Mechanisms - 2018](https://arxiv.org/pdf/1805.09843.pdf)
@@ -41,6 +42,8 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 ## Additional Pytorch loss
 -  **FocalLoss**          : [Focal Loss for Dense Object Detection - 2017](https://arxiv.org/pdf/1708.02002) - Source : [mbsariyildiz](https://github.com/mbsariyildiz/focal-loss.pytorch)
 -  **LabelSmoothingLoss** : [Rethinking the Inception Architecture for Computer Vision - 2015](https://arxiv.org/pdf/1512.00567.pdf) - Source : [OpenNMT](https://github.com/OpenNMT/OpenNMT-py/blob/master/onmt/utils/loss.py)
+-  **Supervised Contrastive Loss**: [Supervised Contrastive Learning - 2020](https://arxiv.org/pdf/2004.11362.pdf) - Source : [Yonglong Tian](https://github.com/HobbitLong/SupContrast)
+
 ## Datasets
 -  **Sentiment analysis**      : [IMDB](http://ai.stanford.edu/~amaas/data/sentiment/), [MR](http://www.cs.cornell.edu/people/pabo/movie-review-data/)
 -  **Question classification** : [TREC6, TREC50](https://trec.nist.gov/data/qa.html)
