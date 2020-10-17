@@ -28,6 +28,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **GRU/BiGRU**  : [Neural Machine Translation by Jointly Learning to Align and Translate - 2014](https://arxiv.org/pdf/1409.0473)
 
 ## Additional Pytorch Optimizers
+-  **AdaBelief** : [AdaBelief Optimizer: Adapting Stepsizes by the Belief in Observed Gradients - 2020](https://arxiv.org/pdf/2010.07468.pdf) - Source : [juntang-zhuang](https://github.com/juntang-zhuang/Adabelief-Optimizer)
 -  **AdaBound**  : [Adaptive Gradient Methods with Dynamic Bound of Learning Rate - 2019](https://arxiv.org/pdf/1902.09843) - Source : [Luolc](https://github.com/Luolc/AdaBound)
 -  **DiffGrad**  : [diffGrad: An Optimization Method for Convolutional Neural Networks - 2019](https://arxiv.org/pdf/1909.11015) - Source : [Less Wright](https://github.com/lessw2020/Best-Deep-Learning-Optimizers/tree/master/diffgrad)
 -  **Lookahead** : [Lookahead Optimizer: k steps forward, 1 step back - 2019](https://arxiv.org/pdf/1907.08610) - Source : [lonePatient](https://github.com/lonePatient/lookahead_pytorch)
