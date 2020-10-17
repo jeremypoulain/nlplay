@@ -2,38 +2,36 @@
 Title    : Deep Pyramid Convolutional Neural Networks for Text Categorization - 2017
 Authors  : Rie Johnson, Tong Zhang
 Papers   : https://ai.tencent.com/ailab/media/publications/ACL3-Brady.pdf
-Source   : https://github.com/Cheneng/
-           https://github.com/Cheneng/DPCNN/blob/master/model/DPCNN.py
+Source   : https://github.com/Tencent/NeuralNLP-NeuralClassifier/blob/master/model/classification/dpcnn.py
 """
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from nlplay.models.pytorch.utils import get_activation_func
 
 
 class DPCNN(nn.Module):
     def __init__(
         self,
-        vocabulary_size,
-        num_classes,
-        activation_function="relu",
-        channel_size=250,
-        embedding_size=300,
-        drop_out=0.0,
+        vocabulary_size: int,
+        num_classes: int,
+        embedding_size: int = 300,
+        num_blocks: int = 2,
+        pooling_stride: int = 2,
+        num_kernels: int = 16,
+        kernel_size: int = 3,
+        dropout: float = 0.2,
         pretrained_vec=None,
-        update_embedding=True,
-        pad_index=0,
+        update_embedding: bool = True,
+        pad_index: int = 0,
     ):
         super(DPCNN, self).__init__()
 
+        self.num_classes = num_classes
+
+        self.vocabulary_size = vocabulary_size
         self.embedding_size = embedding_size
         self.pretrained_vec = pretrained_vec
-        self.channel_size = channel_size
         self.update_embedding = update_embedding
-        self.input_dropout_p = drop_out
-        self.num_classes = num_classes
-        self.vocabulary_size = vocabulary_size
-        self.pretrained_vec = pretrained_vec
 
         self.embedding = nn.Embedding(
             self.vocabulary_size, self.embedding_size, padding_idx=pad_index
@@ -42,58 +40,63 @@ class DPCNN(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         self.embedding.weight.requires_grad = self.update_embedding
 
-        self.input_dropout = nn.Dropout(p=self.input_dropout_p)
+        self.num_kernels = num_kernels
+        self.pooling_stride = pooling_stride
+        self.kernel_size = kernel_size
 
-        self.conv_region_embedding = nn.Conv2d(
-            1, self.channel_size, (3, self.embedding_size), stride=1
+        self.radius = int(self.kernel_size / 2)
+        assert self.kernel_size % 2 == 1, "DPCNN kernel should be odd!"
+
+        self.convert_conv = torch.nn.Sequential(
+            torch.nn.Conv1d(
+                self.embedding_size,
+                self.num_kernels,
+                self.kernel_size,
+                padding=self.radius,
+            )
         )
-        self.conv3 = nn.Conv2d(self.channel_size, self.channel_size, (3, 1), stride=1)
-        self.pooling = nn.MaxPool2d(kernel_size=(3, 1), stride=2)
-        self.padding_conv = nn.ZeroPad2d((0, 0, 1, 1))
-        self.padding_pool = nn.ZeroPad2d((0, 0, 0, 1))
 
-        self.act_fun = get_activation_func(activation_function.lower())
+        self.convs = torch.nn.ModuleList(
+            [
+                torch.nn.Sequential(
+                    torch.nn.ReLU(),
+                    torch.nn.Conv1d(
+                        self.num_kernels,
+                        self.num_kernels,
+                        self.kernel_size,
+                        padding=self.radius,
+                    ),
+                    torch.nn.ReLU(),
+                    torch.nn.Conv1d(
+                        self.num_kernels,
+                        self.num_kernels,
+                        self.kernel_size,
+                        padding=self.radius,
+                    ),
+                )
+                for i in range(num_blocks + 1)
+            ]
+        )
+        self.dropout = nn.Dropout(p=dropout)
+        self.fc1 = torch.nn.Linear(self.num_kernels, self.num_classes)
 
-        self.linear_out = nn.Linear(self.channel_size, self.num_classes)
+    def forward(self, x):
+        embedding = self.embedding(x)
+        embedding = embedding.permute(0, 2, 1)
 
-    def forward(self, input_var, lengths=None):
-        embeded = self.embedding(input_var)
-        embeded = self.input_dropout(embeded)
-        batch, width, height = embeded.shape
-        embeded = embeded.view((batch, 1, width, height))
+        conv_embedding = self.convert_conv(embedding)
+        conv_features = self.convs[0](conv_embedding)
+        conv_features = conv_embedding + conv_features
 
-        # Region embedding
-        x = self.conv_region_embedding(embeded)
-        x = self.padding_conv(x)
-        x = self.act_fun(x)
-        x = self.conv3(x)
-        x = self.padding_conv(x)
-        x = self.act_fun(x)
-        x = self.conv3(x)
+        for i in range(1, len(self.convs)):
+            block_features = F.max_pool1d(
+                conv_features, self.kernel_size, self.pooling_stride
+            )
+            conv_features = self.convs[i](block_features)
+            conv_features = conv_features + block_features
 
-        while x.size()[-2] >= 2:
-            x = self._block(x)
+        doc_embedding = F.max_pool1d(conv_features, conv_features.size(2)).squeeze()
 
-        x = x.view(batch, self.channel_size)
-        x = self.linear_out(x)
-        x = F.log_softmax(x, dim=1)
-        return x
-
-    def _block(self, x):
-        # Pooling
-        x = self.padding_pool(x)
-        px = self.pooling(x)
-
-        # Convolution
-        x = self.padding_conv(px)
-        x = F.relu(x)
-        x = self.conv3(x)
-
-        x = self.padding_conv(x)
-        x = F.relu(x)
-        x = self.conv3(x)
-
-        # Short Cut
-        x = x + px
-
-        return x
+        out = self.dropout(self.fc1(doc_embedding))
+        out = F.log_softmax(out, dim=1)
+        return out

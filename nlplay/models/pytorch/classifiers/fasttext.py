@@ -49,9 +49,11 @@ class PytorchFastText(nn.Module):
     def forward(self, x):
         # global average pooling
         x_embedding = self.embedding(x).mean(dim=1)
+
         if self.drop_out > 0.0:
             x_embedding = F.dropout(x_embedding, self.drop_out)
 
         out = self.fc1(x_embedding)
         out = F.log_softmax(out, dim=1)
+
         return out
