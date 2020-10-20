@@ -18,6 +18,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **NBSVM++**    : [Baselines and Bigrams: Simple, Good Sentiment and Topic Classification - 2012](https://www.aclweb.org/anthology/P12-2018.pdf) - Source : [FastAI](https://github.com/fastai/fastai/blob/release-1.0.61/old/fastai/nlp.py) 
 -  **CharCNN**    : [Character-level Convolutional Networks for Text Classification - 2015](https://arxiv.org/pdf/1509.01626.pdf) 
 -  **TextCNN**    : [Convolutional Neural Networks for Sentence Classification - 2014](https://arxiv.org/pdf/1408.5882.pdf) - Source : [Galsang](https://github.com/galsang/CNN-sentence-classification-pytorch)
+-  **TextRCNN**   : [Recurrent Convolutional Neural Networks for Text Classification - 2015](http://www.nlpr.ia.ac.cn/cip/~liukang/liukangPageFile/Recurrent%20Convolutional%20Neural%20Networks%20for%20Text%20Classification.pdf)
 -  **EXAM**       : [Explicit Interaction Model towards Text Classification - 2018](https://arxiv.org/pdf/1811.09386.pdf) - !UNDER DEVELOPMENT!
 -  **DPCNN**      : [Deep Pyramid Convolutional Neural Networks for Text Categorization - 2017](https://ai.tencent.com/ailab/media/publications/ACL3-Brady.pdf) - Source : [Cheneng](https://github.com/Cheneng/DPCNN/blob/master/model/DPCNN.py)
 -  **QRNN**       : [Quasi-Recurrent Neural Networks - 2016](https://arxiv.org/pdf/1611.01576) - Source : [Dreamgonfly](https://github.com/dreamgonfly/deep-text-classification-pytorch)

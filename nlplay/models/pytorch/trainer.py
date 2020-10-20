@@ -181,6 +181,7 @@ class PytorchModelTrainer(object):
 
                 # Update model parameters
                 self.optimizer.step()
+
                 # Adjust learning rate / scheduler if specified
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()

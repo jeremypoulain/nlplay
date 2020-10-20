@@ -72,7 +72,7 @@ class RNN(nn.Module):
         if self.rnn_type == "lstm":
             self.rnn_encoder = nn.LSTM(
                 input_size=embedding_size,
-                hidden_size=h_size,
+                hidden_size=hidden_size,
                 num_layers=num_layers,
                 batch_first=True,
                 bidirectional=bidirectional,
