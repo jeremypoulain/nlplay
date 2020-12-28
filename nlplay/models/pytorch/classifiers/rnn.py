@@ -31,6 +31,7 @@ class RNN(nn.Module):
         pretrained_vec=None,
         update_embedding: bool = False,
         padding_idx: int = 0,
+        apply_sm: bool = True
     ):
         """
         Args:
@@ -50,6 +51,7 @@ class RNN(nn.Module):
         self.rnn_type = rnn_type.lower()
         self.rnn_encoder = None
         self.drop_out = dropout
+        self.apply_sm = apply_sm
 
         self.pretrained_vec = pretrained_vec
         self.embedding = nn.Embedding(
@@ -109,5 +111,7 @@ class RNN(nn.Module):
             out = F.dropout(out, p=self.drop_out)
 
         out = self.fc1(out)
+        if self.apply_sm:
+            out = F.log_softmax(out, dim=1)
 
         return out

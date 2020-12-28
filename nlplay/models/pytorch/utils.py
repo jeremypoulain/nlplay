@@ -70,9 +70,6 @@ def embeddings_to_cosine_similarity_matrix(embedding: torch.Tensor):
     return x
 
 
-
-
-
 def masked_softmax(vector, mask, dim=-1, memory_efficient=False, mask_fill_value=-1e32):
     """
     Title    : A masked softmax module to correctly implement attention in Pytorch.

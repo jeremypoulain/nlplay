@@ -27,11 +27,12 @@ class TextRCNN(nn.Module):
         padding_idx: int = 0,
         pretrained_vec=None,
         update_embedding: bool = True,
+        apply_sm: bool = True
     ):
         super(TextRCNN, self).__init__()
 
         self.rnn_type = rnn_type.lower()
-
+        self.apply_sm = apply_sm
         self.pretrained_vec = pretrained_vec
 
         self.embedding = nn.Embedding(
@@ -96,5 +97,7 @@ class TextRCNN(nn.Module):
         output = self.dropout(output)
         output = self.fc2(output)
 
-        output = F.log_softmax(output, dim=1)
+        if self.apply_sm:
+            output = F.log_softmax(output, dim=1)
+
         return output

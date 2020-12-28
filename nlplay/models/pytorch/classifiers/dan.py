@@ -19,8 +19,10 @@ class DAN2L(nn.Module):
         drop_out: float = 0.2,
         pretrained_vec=None,
         freeze_embedding: bool = False,
+        apply_sm: bool = True
     ):
         super(DAN2L, self).__init__()
+        self.apply_sm = apply_sm
         self.pretrained_vec = pretrained_vec
         self.embedding = nn.Embedding(
             num_embeddings=vocabulary_size,
@@ -43,6 +45,7 @@ class DAN2L(nn.Module):
 
     def forward(self, x):
         x = self.embedding(x).mean(dim=1)
+
         if self.drop_out > 0.0:
             x = self.dropout1(x)
 
@@ -50,8 +53,10 @@ class DAN2L(nn.Module):
         if self.drop_out > 0.0:
             x = self.dropout2(x)
 
-        x = self.fc2(x)
-        out = F.log_softmax(x, dim=1)
+        out = self.fc2(x)
+
+        if self.apply_sm:
+            out = F.log_softmax(out, dim=1)
 
         return out
 
@@ -73,8 +78,10 @@ class DAN3L(nn.Module):
         drop_out: float = 0.2,
         pretrained_vec=None,
         freeze_embedding: bool = False,
+        apply_sm: bool = True
     ):
         super(DAN3L, self).__init__()
+        self.apply_sm = apply_sm
         self.pretrained_vec = pretrained_vec
         self.embedding = nn.Embedding(
             num_embeddings=vocabulary_size,
@@ -110,7 +117,9 @@ class DAN3L(nn.Module):
         if self.drop_out > 0.0:
             x = self.dropout3(x)
 
-        x = self.fc3(x)
-        out = F.log_softmax(x, dim=1)
+        out = self.fc3(x)
+
+        if self.apply_sm:
+            out = F.log_softmax(out, dim=1)
 
         return out

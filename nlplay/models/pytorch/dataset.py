@@ -964,7 +964,7 @@ class DSGenerator(object):
             "train_file": self.train_file,
             "test_file": self.test_file,
             "val_file": self.val_file,
-            "vocab_size":  self.vocab_size,
+            "vocabulary_size":  self.vocab_size,
             "preprocess_ncore": preprocess_ncore,
             "stop_words": stop_words,
             "max_features": max_features,

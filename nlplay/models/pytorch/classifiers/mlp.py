@@ -17,6 +17,7 @@ class MLP(nn.Module):
         padding_idx: int = 0,
         pretrained_vec=None,
         update_embedding: bool = True,
+        apply_sm: bool = True
     ):
         """
         Args:
@@ -41,7 +42,7 @@ class MLP(nn.Module):
             embedding_dim=embedding_size,
             padding_idx=padding_idx,
         )
-
+        self.apply_sm = apply_sm
         if self.pretrained_vec is not None:
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
@@ -88,8 +89,11 @@ class MLP(nn.Module):
         for m in self.module_list:
             x = m(x)
 
-        out = F.log_softmax(x, dim=1)
-        return out
+        if self.apply_sm:
+            out = F.log_softmax(x, dim=1)
+            return out
+        else:
+            return x
 
 
 

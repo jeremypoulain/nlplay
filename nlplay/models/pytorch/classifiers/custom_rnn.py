@@ -19,7 +19,7 @@ class CustomRNN(nn.Module):
         pretrained_vec=None,
         update_embedding: bool = False,
         padding_idx: int = 0,
-        include_softmax: bool = True,
+        apply_sm: bool = True,
     ):
 
         super().__init__()
@@ -28,7 +28,7 @@ class CustomRNN(nn.Module):
         self.rnn_encoder = None
         self.spatial_dropout = spatial_dropout
         self.dropout = dropout
-        self.include_softmax = include_softmax
+        self.apply_sm = apply_sm
 
         self.pretrained_vec = pretrained_vec
         self.embedding = nn.Embedding(
@@ -94,7 +94,7 @@ class CustomRNN(nn.Module):
         # pass through the output layer and return the output
         out = self.fc1(feats)
 
-        if self.include_softmax:
+        if self.apply_sm:
             out = F.log_softmax(out, dim=1)
 
         return out

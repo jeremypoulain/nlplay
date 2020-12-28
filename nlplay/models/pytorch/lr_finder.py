@@ -472,7 +472,7 @@ class DataLoaderIterWrapper(object):
         self._iterator = iter(data_loader)
 
     def __next__(self):
-        # Get a new set of inputs and labels
+        # Get a new set of x and labels
         try:
             inputs, labels, *_ = next(self._iterator)
         except StopIteration:
