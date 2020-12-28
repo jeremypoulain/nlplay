@@ -19,6 +19,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **CharCNN**    : [Character-level Convolutional Networks for Text Classification - 2015](https://arxiv.org/pdf/1509.01626.pdf) 
 -  **TextCNN**    : [Convolutional Neural Networks for Sentence Classification - 2014](https://arxiv.org/pdf/1408.5882.pdf) - Source : [Galsang](https://github.com/galsang/CNN-sentence-classification-pytorch)
 -  **TextRCNN**   : [Recurrent Convolutional Neural Networks for Text Classification - 2015](http://www.nlpr.ia.ac.cn/cip/~liukang/liukangPageFile/Recurrent%20Convolutional%20Neural%20Networks%20for%20Text%20Classification.pdf)
+-  **LEAM**       : [Joint Embedding of Words and Labels for Text Classification - 2018](https://arxiv.org/pdf/1805.04174.pdf)
 -  **EXAM**       : [Explicit Interaction Model towards Text Classification - 2018](https://arxiv.org/pdf/1811.09386.pdf) - !UNDER DEVELOPMENT!
 -  **DPCNN**      : [Deep Pyramid Convolutional Neural Networks for Text Categorization - 2017](https://ai.tencent.com/ailab/media/publications/ACL3-Brady.pdf) - Source : [Cheneng](https://github.com/Cheneng/DPCNN/blob/master/model/DPCNN.py)
 -  **QRNN**       : [Quasi-Recurrent Neural Networks - 2016](https://arxiv.org/pdf/1611.01576) - Source : [Dreamgonfly](https://github.com/dreamgonfly/deep-text-classification-pytorch)
