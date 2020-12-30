@@ -41,7 +41,7 @@ lr = 0.0001
 batch_size = 128
 num_classes = 2
 model_mode = "small"
-dropout = 0.5
+dropout = 0.1
 num_workers = 4
 
 
@@ -94,6 +94,14 @@ trainer = PytorchModelTrainer(
     batch_size=batch_size,
     n_workers=num_workers,
     epochs=num_epochs,
-    early_stopping_patience=10,
+    early_stopping_patience=5,
 )
 trainer.train_evaluate()
+# 2020-12-30 16:20:02 ------------------------------------------
+# 2020-12-30 16:20:02 ---              SUMMARY               ---
+# 2020-12-30 16:20:02 ------------------------------------------
+# 2020-12-30 16:20:02 Number of model parameters : 11335938
+# 2020-12-30 16:20:02 Total Training Time: 11m 35s
+# 2020-12-30 16:20:02 Total Time: 11m 35s
+# 2020-12-30 16:20:02 Best Epoch: 17 - Accuracy Score: 0.833160
+# 2020-12-30 16:20:02 ------------------------------------------
