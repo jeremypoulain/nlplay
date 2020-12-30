@@ -5,7 +5,6 @@ Author  : Guoyin Wang, Chunyuan Li, Wenlin Wang, Yizhe Zhang,
 Papers  : https://arxiv.org/pdf/1805.04174.pdf
 Source  : https://github.com/guoyinwang/LEAM
           https://github.com/yzye/leam
-
 """
 import torch
 import torch.nn as nn
@@ -95,6 +94,7 @@ class LEAM(nn.Module):
         z = torch.mul(beta, w_emb)
         z = z.sum(1)
 
+        # Optional MLP layers on top
         for m in self.module_list:
             z = m(z)
 

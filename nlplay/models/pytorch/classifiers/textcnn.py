@@ -2,8 +2,7 @@
 Title    : Convolutional Neural Networks for Sentence Classification - 2014
 Authors  : Yoon Kim
 Papers   : https://arxiv.org/abs/1607.01759
-Source   : https://github.com/galsang/
-           https://github.com/galsang/CNN-sentence-classification-pytorch
+Source   : https://github.com/galsang/CNN-sentence-classification-pytorch
 """
 import torch
 import torch.nn as nn
@@ -24,11 +23,13 @@ class TextCNN(nn.Module):
         dropout_prob=0.5,
         pretrained_vec=None,
         pad_index=0,
+        apply_sm: bool = True,
     ):
 
         super(TextCNN, self).__init__()
 
         self.model_type = model_type
+        self.apply_sm = apply_sm
         self.max_sent_len = max_sent_len
         self.embedding_dim = embedding_dim
         self.vocabulary_size = vocabulary_size
@@ -93,7 +94,9 @@ class TextCNN(nn.Module):
         x = torch.cat(conv_results, 1)
         x = F.dropout(x, p=self.dropout_prob, training=self.training)
 
-        x = self.fc(x)
-        x = F.log_softmax(x, dim=1)
+        out = self.fc(x)
 
-        return x
+        if self.apply_sm:
+            out = F.log_softmax(out, dim=1)
+
+        return out

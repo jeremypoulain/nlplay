@@ -23,11 +23,12 @@ class DPCNN(nn.Module):
         pretrained_vec=None,
         update_embedding: bool = True,
         pad_index: int = 0,
+        apply_sm: bool = True,
     ):
         super(DPCNN, self).__init__()
 
         self.num_classes = num_classes
-
+        self.apply_sm = apply_sm
         self.vocabulary_size = vocabulary_size
         self.embedding_size = embedding_size
         self.pretrained_vec = pretrained_vec
@@ -45,7 +46,7 @@ class DPCNN(nn.Module):
         self.kernel_size = kernel_size
 
         self.radius = int(self.kernel_size / 2)
-        assert self.kernel_size % 2 == 1, "DPCNN kernel should be odd!"
+        assert self.kernel_size % 2 == 1, "DPCNN kernel size should be odd!"
 
         self.convert_conv = torch.nn.Sequential(
             torch.nn.Conv1d(
@@ -98,5 +99,7 @@ class DPCNN(nn.Module):
         doc_embedding = F.max_pool1d(conv_features, conv_features.size(2)).squeeze()
 
         out = self.dropout(self.fc1(doc_embedding))
-        out = F.log_softmax(out, dim=1)
+        if self.apply_sm:
+            out = F.log_softmax(out, dim=1)
+
         return out

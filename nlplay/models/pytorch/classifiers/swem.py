@@ -18,11 +18,13 @@ class SWEM(nn.Module):
         embedding_size: int = 300,
         hidden_size: int = 100,
         swem_mode: str = "concat",
+        swem_window: int = 3,
         activation_function: str = "relu",
         drop_out: float = 0.2,
         padding_idx: int = 0,
         pretrained_vec=None,
         update_embedding: bool = True,
+        apply_sm: bool = True
     ):
         """
         Args:
@@ -40,9 +42,11 @@ class SWEM(nn.Module):
         super(SWEM, self).__init__()
 
         self.swem_mode = swem_mode
-
+        self.swem_window = swem_window
+        self.apply_sm = apply_sm
         self.drop_out = drop_out
         self.pretrained_vec = pretrained_vec
+        self.embedding_size = embedding_size
         self.embedding = nn.Embedding(
             num_embeddings=vocabulary_size,
             embedding_dim=embedding_size,
@@ -67,6 +71,8 @@ class SWEM(nn.Module):
 
     def forward(self, x):
         x_embedding = self.embedding(x)
+        batch_size = x.shape[0]
+        seq_len = x.shape[1]
 
         if self.swem_mode == "avg":
             # apply global average pooling only
@@ -81,6 +87,13 @@ class SWEM(nn.Module):
             x2, _ = torch.max(x_embedding, dim=1)
             # concat average & max pooling
             x_embedding = torch.cat((x1, x2), dim=1)
+        # elif self.swem_mode == "hierarchical":
+            # word_vecs = []
+            # for i in range(seq_len - self.swem_window + 1):
+            #     mean_word_wndw = x_embedding[:, i: i + self.swem_window, :].mean(dim=1)
+            #     word_vecs.append(mean_word_wndw)
+            # word_vecs = torch.cat(word_vecs)
+            # x_embedding, _ = torch.max(word_vecs.view(batch_size, -1, self.embedding_size), dim=1)
 
         if self.drop_out > 0.0:
             x_embedding = F.dropout(x_embedding, self.drop_out)
@@ -89,6 +102,8 @@ class SWEM(nn.Module):
         h_layer = self.activation(h_layer)
 
         out = self.fc2(h_layer)
-        out = F.log_softmax(out, dim=1)
+
+        if self.apply_sm:
+            out = F.log_softmax(out, dim=1)
 
         return out
