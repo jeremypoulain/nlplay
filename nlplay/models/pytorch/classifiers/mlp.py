@@ -26,7 +26,7 @@ class MLP(nn.Module):
             embedding_size (int): size of the embeddings
             embedding_mode (str): "avg","max" or "concat"
             fc_activation_functions (str)
-            drop_out (float) : default 0.2; drop out rate applied to the embedding layer
+            dropout (float) : default 0.2; drop out rate applied to the embedding layer
             padding_idx (int): default 0; Embedding will not use this index
             pretrained_vec (nd.array): default None : numpy matrix containing pretrained word vectors
             update_embedding (boolean) : default True : train (True) or freeze(False) the embedding layer

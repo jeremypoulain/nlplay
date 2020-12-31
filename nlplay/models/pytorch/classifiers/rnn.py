@@ -50,7 +50,8 @@ class RNN(nn.Module):
 
         self.rnn_type = rnn_type.lower()
         self.rnn_encoder = None
-        self.drop_out = dropout
+        self.bidirectional = bidirectional
+        self.dropout = dropout
         self.apply_sm = apply_sm
 
         self.pretrained_vec = pretrained_vec
@@ -103,12 +104,15 @@ class RNN(nn.Module):
         else:
             output, (h_n, c_n) = self.rnn_encoder(embeddings)
 
-        # Take the output of last RNN layer
-        out = h_n[-1]
+        # Take the output of last RNN hidden layer(s)
+        if self.bidirectional:
+            out = torch.cat((h_n[-2, :, :], h_n[-1, :, :]), dim=1)
+        else:
+            out = h_n[-1]
 
         # Apply dropout regularization
-        if self.drop_out > 0.0:
-            out = F.dropout(out, p=self.drop_out)
+        if self.dropout > 0.0:
+            out = F.dropout(out, p=self.dropout)
 
         out = self.fc1(out)
         if self.apply_sm:

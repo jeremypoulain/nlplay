@@ -216,3 +216,61 @@ def char_vectorizer(X, vocab, max_seq: int = 1014):
         output[i, :, :] = sentence_vec
 
     return output
+
+
+def init_tensor(
+    tensor,
+    init_type="XAVIER_UNIFORM",
+    low=0,
+    high=1,
+    mean=0,
+    std=1,
+    activation_type="linear",
+    fan_mode="FAN_IN",
+    negative_slope=0,
+):
+    """Init torch.Tensor
+    Args:
+        tensor: Tensor to be initialized.
+        init_type: Init type, candidate can be found in InitType.
+        low: The lower bound of the uniform distribution,
+            useful when init_type is uniform.
+        high: The upper bound of the uniform distribution,
+            useful when init_type is uniform.
+        mean: The mean of the normal distribution,
+            useful when init_type is normal.
+        std: The standard deviation of the normal distribution,
+            useful when init_type is normal.
+        activation_type: For xavier and kaiming init,
+            coefficient is calculate according the activation_type.
+        fan_mode: For kaiming init, fan mode is needed
+        negative_slope: For kaiming init,
+            coefficient is calculate according the negative_slope.
+    Returns:
+    """
+    if init_type == "UNIFORM":
+        return torch.nn.init.uniform_(tensor, a=low, b=high)
+    elif init_type == "NORMAL":
+        return torch.nn.init.normal_(tensor, mean=mean, std=std)
+    elif init_type == "XAVIER_UNIFORM":
+        return torch.nn.init.xavier_uniform_(
+            tensor, gain=torch.nn.init.calculate_gain(activation_type)
+        )
+    elif init_type == "XAVIER_NORMAL":
+        return torch.nn.init.xavier_normal_(
+            tensor, gain=torch.nn.init.calculate_gain(activation_type)
+        )
+    elif init_type == "KAIMING_UNIFORM":
+        return torch.nn.init.kaiming_uniform_(
+            tensor, a=negative_slope, mode=fan_mode, nonlinearity=activation_type
+        )
+    elif init_type == "KAIMING_NORMAL":
+        return torch.nn.init.kaiming_normal_(
+            tensor, a=negative_slope, mode=fan_mode, nonlinearity=activation_type
+        )
+    elif init_type == "ORTHOGONAL":
+        return torch.nn.init.orthogonal_(
+            tensor, gain=torch.nn.init.calculate_gain(activation_type)
+        )
+    else:
+        raise TypeError("Unsupported tensor init type: %s." % init_type)
