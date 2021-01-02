@@ -38,6 +38,7 @@ class PytorchModelTrainer(object):
         early_stopping_patience: int = 3,
         use_mixed_precision: bool = False,
         apex_opt_level: str = "O0",
+        log_interval: int = 50,
     ):
 
         self.model = model
@@ -66,6 +67,7 @@ class PytorchModelTrainer(object):
         self.model_output_folder = model_output_folder
         self.checkpoint_file_suffix = checkpoint_file_suffix
         self.max_grad_clip_norm = max_grad_clip_norm
+        self.log_interval = log_interval
 
         if use_mixed_precision:
             if APEX_AVAILABLE and torch.cuda.is_available():
@@ -81,7 +83,7 @@ class PytorchModelTrainer(object):
 
         logging.getLogger(__name__)
 
-    def train_evaluate(self, seed=42, check_dl=True, run_lr_finder=False):
+    def train_evaluate(self, seed=42, check_dl=True, run_lr_finder=False,         show_lr_plot: bool = False,):
 
         set_seed(seed)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -108,7 +110,7 @@ class PytorchModelTrainer(object):
             )
             lr_finder.range_test(self.train_dl, start_lr=10e-6, end_lr=1, num_iter=100)
             lr_finder.plot(
-                show=False,
+                show=show_lr_plot,
                 output_path="LR_finder_{}_{}.png".format(
                     self.model.__class__.__name__,
                     datetime.now().strftime("%Y%m%d_%H%M%S"),
@@ -142,13 +144,14 @@ class PytorchModelTrainer(object):
 
         n_iters = round(len(self.train_ds) / self.batch_size)
         logging.info("Number of iterations/epoch : {}".format(n_iters))
-        log_interval = 10
+        log_interval = self.log_interval
 
         # Loop over epochs
         start_time = time.time()
         for epoch in range(self.n_epochs):
             train_losses = []
             losses = []
+            epoch_start_time = time.time()
             self.model.train()
             for batch_index, (batch_train_data, batch_train_labels) in enumerate(
                 self.train_dl
@@ -214,7 +217,14 @@ class PytorchModelTrainer(object):
                     "Epoch: %03d/%03d | Val accuracy: %.6f"
                     % (epoch + 1, self.n_epochs, val_acc)
                 )
-                logging.info("Time elapsed: {}".format(get_elapsed_time(start_time)))
+                logging.info(
+                    "Epoch: %03d/%03d | Epoch duration: %s"
+                    % (epoch + 1, self.n_epochs, get_elapsed_time(epoch_start_time))
+                )
+                logging.info(
+                    "Epoch: %03d/%03d | Total time elapsed: %s"
+                    % (epoch + 1, self.n_epochs, get_elapsed_time(start_time))
+                )
 
                 # early stopping & checkpoint
                 current_score = val_acc
@@ -255,29 +265,23 @@ class PytorchModelTrainer(object):
         logging.info("------------------------------------------")
 
     def save_checkpoint(self):
-        """Saves model when validation loss decrease."""
+        """Saves model when validation loss decreases."""
+        f_name = "checkpoint_{}.pt".format(self.checkpoint_file_suffix)
+
         if self.apex:
             checkpoint = {
                 "model": self.model.state_dict(),
                 "optimizer": self.optimizer.state_dict(),
                 "amp": amp.state_dict(),
             }
-            torch.save(
-                checkpoint,
-                os.path.join(
-                    self.model_output_folder,
-                    "{}_checkpoint_{}.pt".format(
-                        self.model.__class__.__name__, self.checkpoint_file_suffix
-                    ),
-                ),
-            )
+            torch.save(checkpoint, os.path.join(self.model_output_folder, f_name))
         else:
-            torch.save(
-                self.model.state_dict(),
-                os.path.join(
-                    self.model_output_folder,
-                    "{}_checkpoint_{}.pt".format(
-                        self.model.__class__.__name__, self.checkpoint_file_suffix
-                    ),
-                ),
-            )
+            checkpoint = {"model": self.model.state_dict()}
+            torch.save(checkpoint, os.path.join(self.model_output_folder, f_name))
+
+    def load_checkpoint(self, model_file_path: str):
+        if self.apex:
+            raise NotImplementedError()
+        else:
+            checkpoint = torch.load(model_file_path)
+            self.model.load_state_dict(checkpoint["model"])

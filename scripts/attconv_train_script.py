@@ -4,7 +4,6 @@ from torch import nn
 from nlplay.data.cache import WordVectorsManager, DSManager, DS, WV
 from nlplay.features.text_cleaner import *
 from nlplay.models.pytorch.classifiers.att_conv_net import AttentiveConvNet
-from nlplay.models.pytorch.classifiers.conv_rnn import C_RNN
 from nlplay.models.pytorch.dataset import DSGenerator
 from nlplay.models.pytorch.pretrained import get_pretrained_vecs
 from nlplay.models.pytorch.trainer import PytorchModelTrainer
@@ -30,7 +29,7 @@ hidden_size = 64
 margin_size = 3
 attention_type = "bilinear"
 attentive_conv_net_type = "advanced"
-dropout = 0.3
+dropout = 0.5
 lr = 0.0015
 num_workers = 1
 
@@ -81,11 +80,11 @@ trainer = PytorchModelTrainer(
     epochs=num_epochs,
 )
 trainer.train_evaluate()
-# 2020-12-31 17:47:52 ------------------------------------------
-# 2020-12-31 17:47:52 ---              SUMMARY               ---
-# 2020-12-31 17:47:52 ------------------------------------------
-# 2020-12-31 17:47:52 Number of model parameters : 2211958
-# 2020-12-31 17:47:52 Total Training Time: 1m 21s
-# 2020-12-31 17:47:52 Total Time: 1m 21s
-# 2020-12-31 17:47:52 Best Epoch: 3 - Accuracy Score: 0.861200
-# 2020-12-31 17:47:52 ------------------------------------------
+# 2021-01-02 11:43:31 ------------------------------------------
+# 2021-01-02 11:43:31 ---              SUMMARY               ---
+# 2021-01-02 11:43:31 ------------------------------------------
+# 2021-01-02 11:43:31 Number of model parameters : 2211958
+# 2021-01-02 11:43:31 Total Training Time: 1m 6s
+# 2021-01-02 11:43:31 Total Time: 1m 6s
+# 2021-01-02 11:43:31 Best Epoch: 2 - Accuracy Score: 0.870760
+# 2021-01-02 11:43:31 ------------------------------------------

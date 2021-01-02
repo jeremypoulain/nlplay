@@ -1,8 +1,6 @@
 import logging
-from pathlib import Path
 import torch
 from torch import nn
-
 from nlplay.data.cache import DSManager, DS
 from nlplay.features.text_cleaner import base_cleaner
 from nlplay.models.pytorch.classifiers.linear import SMLinearModel
