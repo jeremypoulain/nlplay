@@ -7,9 +7,11 @@ from nlplay.models.pytorch.utils import init_tensor
 
 class Highway(torch.nn.Module):
     """
-    Title    : Mish: A Self Regularized Non-Monotonic Neural Activation Function - 2015
+    Title    : Highway Networks - 2015
+               Training Very Deep Networks - 2015
     Authors  : Rupesh Kumar Srivastava, Klaus Greff, Jürgen Schmidhuber
     Papers   : https://arxiv.org/pdf/1505.00387.pdf
+               https://arxiv.org/pdf/1507.06228.pdf
     Source   : https://github.com/Tencent/NeuralNLP-NeuralClassifier/blob/06a8ed74215cf0e8bf0ee0e2d875f91ed93da06b/model/layers.py#L150
     Notes    : For now we don't limit the type of the gate and forward.
                Caller should init Highway with transformer and carry and guarantee the embedding_dim
