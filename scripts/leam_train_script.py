@@ -25,7 +25,7 @@ embedding_size = 100
 fc_hidden_sizes = [50]
 fc_activation_functions = ["relu"]
 fc_dropouts = [0.5]
-ngram = 55
+ngram = 25
 lr = 0.0025
 num_workers = 1
 
