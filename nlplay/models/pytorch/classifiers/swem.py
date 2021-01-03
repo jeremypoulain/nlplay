@@ -18,7 +18,7 @@ class SWEM(nn.Module):
         embedding_size: int = 300,
         hidden_size: int = 100,
         swem_mode: str = "concat",
-        swem_window: int = 3,
+        swem_window: int = 2,
         activation_function: str = "relu",
         drop_out: float = 0.2,
         padding_idx: int = 0,
@@ -65,21 +65,24 @@ class SWEM(nn.Module):
         else:
             in_size = embedding_size
 
+        # TODO : the AdaptiveAvgPool1d only allows to use a swem_window=2 aka bigram
+        self.hier_pool = nn.AdaptiveAvgPool1d(self.embedding_size)
+
         self.fc1 = nn.Linear(in_size, hidden_size)
         self.activation = get_activation_func(activation_function.lower())
         self.fc2 = nn.Linear(hidden_size, out_features=num_classes)
 
     def forward(self, x):
         x_embedding = self.embedding(x)
-        batch_size = x.shape[0]
-        seq_len = x.shape[1]
 
         if self.swem_mode == "avg":
             # apply global average pooling only
             x_embedding = x_embedding.mean(dim=1)
+
         elif self.swem_mode == "max":
             # apply global max pooling only
             x_embedding, _ = torch.max(x_embedding, dim=1)
+
         elif self.swem_mode == "concat":
             # apply global average pooling
             x1 = x_embedding.mean(dim=1)
@@ -87,22 +90,20 @@ class SWEM(nn.Module):
             x2, _ = torch.max(x_embedding, dim=1)
             # concat average & max pooling
             x_embedding = torch.cat((x1, x2), dim=1)
-        # elif self.swem_mode == "hierarchical":
-            # word_vecs = []
-            # for i in range(seq_len - self.swem_window + 1):
-            #     mean_word_wndw = x_embedding[:, i: i + self.swem_window, :].mean(dim=1)
-            #     word_vecs.append(mean_word_wndw)
-            # word_vecs = torch.cat(word_vecs)
-            # x_embedding, _ = torch.max(word_vecs.view(batch_size, -1, self.embedding_size), dim=1)
+
+        elif self.swem_mode == "hier":
+            # Rearrange the embedding shape to perform the AdaptiveAvgPool1d
+            x_embedding = x_embedding.permute(0, 2, 1)
+            x_embedding = self.hier_pool(x_embedding).permute(0, 2, 1)
+            # Apply global max-pooling operation on top of the representations for every window
+            x_embedding, _ = torch.max(x_embedding, dim=1)
 
         if self.drop_out > 0.0:
             x_embedding = F.dropout(x_embedding, self.drop_out)
 
         h_layer = self.fc1(x_embedding)
         h_layer = self.activation(h_layer)
-
         out = self.fc2(h_layer)
-
         if self.apply_sm:
             out = F.log_softmax(out, dim=1)
 
