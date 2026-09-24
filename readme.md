@@ -13,6 +13,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 
 ### Pytorch (CPU/GPU)
 -  **FastText**   : [Bag of Tricks for Efficient Text Classification - 2016](https://arxiv.org/abs/1607.01759)
+-  **HashedFastText** : fastText as in the C++ supervised mode, hashed word & character n-grams, EmbeddingBag, SGD with linear decay, feature ids identical to native fastText - Source : [facebookresearch](https://github.com/facebookresearch/fastText), [InseeFrLab](https://github.com/InseeFrLab/torchTextClassifiers)
 -  **DAN**        : [Deep Unordered Composition Rivals Syntactic Methods for Text Classification - 2015](https://arxiv.org/abs/1607.01759)
 -  **MLP**        : A model based on an embedding layer and a configurable pooling & feed-forward neural network on top
 -  **NBSVM++**    : [Baselines and Bigrams: Simple, Good Sentiment and Topic Classification - 2012](https://www.aclweb.org/anthology/P12-2018.pdf) - Source : [FastAI](https://github.com/fastai/fastai/blob/release-1.0.61/old/fastai/nlp.py) 
