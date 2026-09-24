@@ -21,6 +21,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset
 
+from nlplay.models.pytorch.optimizer.prodigy import Prodigy
+from nlplay.models.pytorch.optimizer.schedulefree import AdamWScheduleFree, SGDScheduleFree
+
 
 class HierarchicalSoftmax(nn.Module):
     """
@@ -315,6 +318,18 @@ class CombinedOptimizer:
         for opt in self.optimizers:
             opt.step()
 
+    def train(self):
+        """Train mode of the optimizers defining one, e.g. schedule-free ones."""
+        for opt in self.optimizers:
+            if hasattr(opt, "train"):
+                opt.train()
+
+    def eval(self):
+        """Eval mode of the optimizers defining one, e.g. schedule-free ones."""
+        for opt in self.optimizers:
+            if hasattr(opt, "eval"):
+                opt.eval()
+
     def state_dict(self) -> dict:
         return {"optimizers": [opt.state_dict() for opt in self.optimizers]}
 
@@ -350,7 +365,12 @@ _OPTIMIZERS = {
     "adamw": torch.optim.AdamW,
     "adagrad": torch.optim.Adagrad,
     "rmsprop": torch.optim.RMSprop,
+    "adamw_schedulefree": AdamWScheduleFree,
+    "sgd_schedulefree": SGDScheduleFree,
+    "prodigy": Prodigy,
 }
+# Optimizers without learning rate schedule, their warmup is built in
+_SCHEDULE_FREE = (AdamWScheduleFree, SGDScheduleFree)
 # Optimizers accepting sparse gradients, the others get SparseAdam for the sparse parameters
 _SPARSE_OK = (torch.optim.SGD, torch.optim.Adagrad, torch.optim.SparseAdam)
 
@@ -372,7 +392,7 @@ def linear_decay(total_steps: int, warmup_steps: int = 0) -> Callable[[int], flo
 def fasttext_optimizer(
     model: nn.Module,
     lr: float,
-    total_steps: int,
+    total_steps: int | None,
     optimizer: str | type[torch.optim.Optimizer] = "sgd",
     warmup_steps: int = 0,
     sparse_lr: float | None = None,
@@ -387,17 +407,34 @@ def fasttext_optimizer(
     the rate with the share of processed tokens, here the decay follows the optimizer steps, so with
     minibatches raise lr (0.5 to 1 is a usual start) rather than keeping 0.1.
     :param model: model to optimize.
+    Schedule-free optimizers ("adamw_schedulefree", "sgd_schedulefree") get no scheduler, their warmup is built
+    in and total_steps is not needed (only for the SparseAdam of sparse embeddings), they need
+    optimizer.train() / optimizer.eval() calls, which the PytorchModelTrainer does. "prodigy" estimates the
+    learning rate itself, keep lr=1.0, its safeguard_warmup is enabled with warmup_steps. For fully learning
+    rate free training, use them with dense embeddings (sparse=False), the SparseAdam lr is not estimated.
+    Performance: dense embedding gradients update the whole nwords + bucket table at every step, sparse ones only
+    the rows of the batch. Measured on CPU (4 threads, dim 50, batch 64, AG News): sparse SGD 2 to 3 ms per step
+    whatever the bucket, dense AdamW / schedule-free / Prodigy 73 to 97 ms per step with 200k buckets and 317 to
+    522 ms with 1M buckets. With large hash tables, prefer sparse SGD (or sparse Adam) and tune the learning rate
+    rather than paying the dense update of the learning rate free optimizers.
     :param lr: peak learning rate, fastText uses 0.1 with SGD on single samples, minibatch SGD usually
-        needs 0.5 to 1, Adam / AdamW around 1e-3 to 1e-2.
-    :param total_steps: total number of optimizer steps, i.e. epochs * batches per epoch.
-    :param optimizer: "sgd", "adam", "adamw", "adagrad", "rmsprop" or a torch.optim.Optimizer class.
+        needs 0.5 to 1, Adam / AdamW around 1e-3 to 1e-2, AdamW schedule-free 1 to 10 times AdamW, Prodigy 1.0.
+    :param total_steps: total number of optimizer steps, i.e. epochs * batches per epoch, may be None for
+        schedule-free optimizers with dense embeddings.
+    :param optimizer: "sgd", "adam", "adamw", "adagrad", "rmsprop", "adamw_schedulefree", "sgd_schedulefree",
+        "prodigy" or a torch.optim.Optimizer class.
     :param warmup_steps: steps of linear warmup before the decay.
     :param sparse_lr: learning rate of the SparseAdam used for sparse parameters, lr if None.
     :param optimizer_kwargs: extra arguments of the optimizer, e.g. weight_decay (dense parameters only).
     :returns: (optimizer, scheduler), step the scheduler after every optimizer step, as the
-        PytorchModelTrainer does.
+        PytorchModelTrainer does, scheduler is None for schedule-free optimizers of dense parameters only.
     """
     optimizer_cls = _OPTIMIZERS[optimizer.lower()] if isinstance(optimizer, str) else optimizer
+    schedule_free = issubclass(optimizer_cls, _SCHEDULE_FREE)
+    if schedule_free:
+        optimizer_kwargs.setdefault("warmup_steps", warmup_steps)
+    elif issubclass(optimizer_cls, Prodigy) and warmup_steps > 0:
+        optimizer_kwargs.setdefault("safeguard_warmup", True)
     sparse_params = [
         m.weight for m in model.modules()
         if isinstance(m, (nn.Embedding, nn.EmbeddingBag)) and m.sparse and m.weight.requires_grad
@@ -411,12 +448,13 @@ def fasttext_optimizer(
         optimizers = [torch.optim.SparseAdam(sparse_params, lr=sparse_lr or lr)]
         if dense_params:
             optimizers.append(optimizer_cls(dense_params, lr=lr, **optimizer_kwargs))
-    schedulers = [
-        torch.optim.lr_scheduler.LambdaLR(opt, linear_decay(total_steps, warmup_steps)) for opt in optimizers
-    ]
-    if len(optimizers) == 1:
-        return optimizers[0], schedulers[0]
-    return CombinedOptimizer(optimizers), CombinedScheduler(schedulers)
+    decayed = [opt for opt in optimizers if not isinstance(opt, _SCHEDULE_FREE)]
+    if decayed and total_steps is None:
+        raise ValueError("total_steps is required for the learning rate decay")
+    schedulers = [torch.optim.lr_scheduler.LambdaLR(opt, linear_decay(total_steps, warmup_steps)) for opt in decayed]
+    optimizer = optimizers[0] if len(optimizers) == 1 else CombinedOptimizer(optimizers)
+    scheduler = None if not schedulers else schedulers[0] if len(schedulers) == 1 else CombinedScheduler(schedulers)
+    return optimizer, scheduler
 
 
 def fasttext_sgd(model: nn.Module, lr: float, total_steps: int):

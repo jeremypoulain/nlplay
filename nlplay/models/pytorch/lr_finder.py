@@ -208,6 +208,9 @@ class LRFinder(object):
         diverged = False
         avg_loss, beta = 0.0, 1.0 - smooth_f
         iter_wrapper = DataLoaderIterWrapper(train_loader)
+        # Schedule-free optimizers must be in train mode to step, reset restores their mode
+        if hasattr(self.optimizer, "train"):
+            self.optimizer.train()
         try:
             for iteration, lr in enumerate(tqdm(lrs)):
                 # The recorded learning rate is the one used for this step
@@ -292,6 +295,8 @@ class LRFinder(object):
 
     def _train_batch(self, iter_wrapper, accumulation_steps):
         self.model.train()
+        if hasattr(self.optimizer, "train"):
+            self.optimizer.train()
         use_amp, amp_dtype, device_type = self._amp
         total_loss = 0.0
         self.optimizer.zero_grad()
@@ -324,6 +329,8 @@ class LRFinder(object):
     def _validate(self, dataloader):
         running_loss, count = 0.0, 0
         self.model.eval()
+        if hasattr(self.optimizer, "eval"):
+            self.optimizer.eval()
         with torch.no_grad():
             use_amp, amp_dtype, device_type = self._amp
             for inputs, labels, *_ in dataloader:

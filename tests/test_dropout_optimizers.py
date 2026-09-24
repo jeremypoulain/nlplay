@@ -99,3 +99,80 @@ def test_optimizers_learn_without_warnings(module, name):
             nn.functional.cross_entropy(model(x), y).backward()
             opt.step()
     assert nn.functional.cross_entropy(model(x), y).item() < first
+
+
+def _toy_problem():
+    torch.manual_seed(0)
+    model = nn.Sequential(nn.Linear(10, 16), nn.ReLU(), nn.Linear(16, 3))
+    return model, torch.randn(64, 10), torch.randint(0, 3, (64,))
+
+
+@pytest.mark.parametrize("name", ["AdamWScheduleFree", "SGDScheduleFree"])
+def test_schedule_free_train_eval_modes(name):
+    from nlplay.models.pytorch.optimizer import schedulefree
+
+    model, x, y = _toy_problem()
+    opt = getattr(schedulefree, name)(model.parameters(), lr=1e-2 if name.startswith("AdamW") else 0.1)
+    with pytest.raises(RuntimeError):
+        opt.step()  # train() not called
+    opt.train()
+    first = nn.functional.cross_entropy(model(x), y).item()
+    for _ in range(100):
+        opt.zero_grad()
+        nn.functional.cross_entropy(model(x), y).backward()
+        opt.step()
+    train_point = [p.detach().clone() for p in model.parameters()]
+    opt.eval()
+    assert nn.functional.cross_entropy(model(x), y).item() < first
+    assert any(not torch.equal(a, p) for a, p in zip(train_point, model.parameters()))
+    opt.train()
+    assert all(torch.allclose(a, p, atol=1e-6) for a, p in zip(train_point, model.parameters()))
+
+
+def test_prodigy_learns_with_default_lr():
+    from nlplay.models.pytorch.optimizer.prodigy import Prodigy
+
+    model, x, y = _toy_problem()
+    opt = Prodigy(model.parameters())
+    first = nn.functional.cross_entropy(model(x), y).item()
+    for _ in range(100):
+        opt.zero_grad()
+        nn.functional.cross_entropy(model(x), y).backward()
+        opt.step()
+    assert nn.functional.cross_entropy(model(x), y).item() < 0.5 * first
+    assert opt.param_groups[0]["d"] > opt.param_groups[0]["d0"]
+
+
+def test_fasttext_optimizer_new_optimizers_and_trainer(tmp_path, monkeypatch):
+    # The trainer writes its checkpoints and plots in the working directory
+    monkeypatch.chdir(tmp_path)
+    from torch.utils.data import TensorDataset
+    from nlplay.models.pytorch.classifiers.fasttext_hashed import (
+        CombinedOptimizer, HashedFastText, fasttext_optimizer)
+    from nlplay.models.pytorch.optimizer.schedulefree import AdamWScheduleFree
+    from nlplay.models.pytorch.trainer import PytorchModelTrainer
+
+    dense = HashedFastText(49, 2, 8, fasttext_init=False)
+    opt, sched = fasttext_optimizer(dense, lr=1e-2, total_steps=None, optimizer="adamw_schedulefree", warmup_steps=5)
+    assert isinstance(opt, AdamWScheduleFree) and sched is None and opt.param_groups[0]["warmup_steps"] == 5
+    sparse = HashedFastText(49, 2, 8, sparse=True, fasttext_init=False)
+    opt, sched = fasttext_optimizer(sparse, lr=1e-2, total_steps=100, optimizer="adamw_schedulefree")
+    assert isinstance(opt, CombinedOptimizer) and sched is not None
+    opt, sched = fasttext_optimizer(dense, lr=1.0, total_steps=100, optimizer="prodigy", warmup_steps=5)
+    assert opt.param_groups[0]["safeguard_warmup"]
+    with pytest.raises(ValueError):
+        fasttext_optimizer(dense, lr=0.1, total_steps=None, optimizer="sgd")
+
+    g = torch.Generator().manual_seed(0)
+    x = torch.randint(0, 49, (800, 6), generator=g)
+    y = (x == 7).any(1).long()
+    for name, lr in (("adamw_schedulefree", 2e-2), ("sgd_schedulefree", 2.0), ("prodigy", 1.0)):
+        torch.manual_seed(0)
+        model = HashedFastText(49, 2, 16, fasttext_init=False)
+        opt, sched = fasttext_optimizer(model, lr=lr, total_steps=8 * 25, optimizer=name)
+        trainer = PytorchModelTrainer(model, nn.CrossEntropyLoss(), opt, lr_scheduler=sched,
+                                      train_ds=TensorDataset(x[:600], y[:600]),
+                                      val_ds=TensorDataset(x[600:], y[600:]),
+                                      batch_size=32, epochs=8, early_stopping=False)
+        trainer.train_evaluate(check_dl=False, run_lr_finder=name == "adamw_schedulefree")
+        assert trainer.best_score > 0.9, name

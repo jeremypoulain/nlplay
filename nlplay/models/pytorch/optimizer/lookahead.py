@@ -39,6 +39,16 @@ class Lookahead:
     def state(self):
         return self.base_optimizer.state
 
+    def train(self):
+        """Forward the train mode to the base optimizer, e.g. a schedule-free one."""
+        if hasattr(self.base_optimizer, "train"):
+            self.base_optimizer.train()
+
+    def eval(self):
+        """Forward the eval mode to the base optimizer, e.g. a schedule-free one."""
+        if hasattr(self.base_optimizer, "eval"):
+            self.base_optimizer.eval()
+
     def zero_grad(self, set_to_none: bool = True):
         self.base_optimizer.zero_grad(set_to_none=set_to_none)
 

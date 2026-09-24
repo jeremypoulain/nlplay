@@ -178,6 +178,9 @@ class PytorchModelTrainer(object):
             losses = []
             epoch_start_time = time.time()
             self.model.train()
+            # Schedule-free optimizers keep the training point in train mode and the averaged one in eval mode
+            if hasattr(self.optimizer, "train"):
+                self.optimizer.train()
             for batch_index, (batch_train_data, batch_train_labels) in enumerate(
                 self.train_dl
             ):
@@ -229,6 +232,8 @@ class PytorchModelTrainer(object):
 
             # End of epoch - Evaluate the model performance
             self.model.eval()
+            if hasattr(self.optimizer, "eval"):
+                self.optimizer.eval()
             with torch.set_grad_enabled(False):  # save memory during inference
                 logging.info(
                     "Epoch: %03d/%03d | Train Accuracy: %.6f"
@@ -268,7 +273,7 @@ class PytorchModelTrainer(object):
                     )
                     if self.es_counter >= self.es_patience:
                         self.early_stop = True
-                        logging.warning("/!\ Early stopping model training /!\ ")
+                        logging.warning("/!\\ Early stopping model training /!\\ ")
                         break
                 else:
                     self.best_score = current_score
