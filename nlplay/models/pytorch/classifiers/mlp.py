@@ -3,7 +3,13 @@ from collections.abc import Sequence
 import torch
 import torch.nn as nn
 from torch.nn import functional as F, init
-from nlplay.models.pytorch.utils import get_activation_func
+from nlplay.models.pytorch.utils import (
+    get_activation_func,
+    masked_max,
+    masked_mean,
+    padding_mask,
+    reset_padding_embedding,
+)
 
 
 class MLP(nn.Module):
@@ -63,9 +69,7 @@ class MLP(nn.Module):
                 self.embedding.weight.copy_(pretrained)
             else:
                 init.xavier_uniform_(self.embedding.weight)
-            # The init above overwrites the zero padding row set by nn.Embedding
-            if padding_idx is not None:
-                self.embedding.weight[padding_idx].zero_()
+        reset_padding_embedding(self.embedding)
         self.embedding.weight.requires_grad_(update_embedding)
 
         in_size = embedding_size * 2 if self.embedding_mode == "concat" else embedding_size
@@ -85,33 +89,17 @@ class MLP(nn.Module):
         modules.append(nn.Linear(in_features=self.hidden_sizes[-2], out_features=num_classes))
         self.module_list = nn.ModuleList(modules)
 
-    @staticmethod
-    def _avg_pool(x_embedding: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        # Mean over real tokens only, so that the padding length does not scale the representation
-        mask = mask.unsqueeze(2).to(x_embedding.dtype)
-        return (x_embedding * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1.0)
-
-    @staticmethod
-    def _max_pool(x_embedding: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        # Padding set to -inf so that a zero padding vector never wins over negative values
-        pooled = x_embedding.masked_fill(~mask.unsqueeze(2), float("-inf")).max(dim=1).values
-        # Fully padded sequences → zero vector instead of -inf
-        return pooled.masked_fill(~mask.any(dim=1, keepdim=True), 0.0)
-
     def forward(self, x):
         x_embedding = self.embedding(x)
-        if self.padding_idx is None:
-            mask = torch.ones_like(x, dtype=torch.bool)
-        else:
-            mask = x != self.padding_idx
+        mask = padding_mask(x, self.padding_idx)
 
-        # Pooling over the embedding
+        # Pooling over the embedding, padding positions excluded
         if self.embedding_mode == "avg":
-            x = self._avg_pool(x_embedding, mask)
+            x = masked_mean(x_embedding, mask)
         elif self.embedding_mode == "max":
-            x = self._max_pool(x_embedding, mask)
+            x = masked_max(x_embedding, mask)
         else:
-            x = torch.cat((self._avg_pool(x_embedding, mask), self._max_pool(x_embedding, mask)), dim=1)
+            x = torch.cat((masked_mean(x_embedding, mask), masked_max(x_embedding, mask)), dim=1)
 
         # Apply each module of the MLP Layer setup
         for m in self.module_list:

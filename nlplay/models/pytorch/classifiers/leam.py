@@ -9,7 +9,7 @@ Source  : https://github.com/guoyinwang/LEAM
 import torch
 import torch.nn as nn
 from torch.nn import functional as F, init
-from nlplay.models.pytorch.utils import get_activation_func
+from nlplay.models.pytorch.utils import get_activation_func, reset_padding_embedding
 
 
 class LEAM(nn.Module):
@@ -48,6 +48,7 @@ class LEAM(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
+        reset_padding_embedding(self.embedding)
         self.embedding.weight.requires_grad = update_embedding
 
         self.embedding_class = nn.Embedding(num_classes, embedding_size)

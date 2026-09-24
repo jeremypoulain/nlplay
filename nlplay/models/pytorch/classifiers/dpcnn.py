@@ -7,6 +7,7 @@ Source   : https://github.com/Tencent/NeuralNLP-NeuralClassifier/blob/master/mod
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from nlplay.models.pytorch.utils import reset_padding_embedding
 
 
 class DPCNN(nn.Module):
@@ -39,6 +40,7 @@ class DPCNN(nn.Module):
         )
         if pretrained_vec is not None:
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
+        reset_padding_embedding(self.embedding)
         self.embedding.weight.requires_grad = self.update_embedding
 
         self.num_kernels = num_kernels

@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import init
+from nlplay.models.pytorch.utils import reset_padding_embedding
 
 
 class TextCNN(nn.Module):
@@ -63,6 +64,10 @@ class TextCNN(nn.Module):
                 self.embedding2.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
                 self.embedding2.weight.requires_grad = False
                 self.in_channel = 2
+
+        reset_padding_embedding(self.embedding)
+        if self.model_type == "multichannel":
+            reset_padding_embedding(self.embedding2)
 
         for i in range(len(self.filters)):
             conv = nn.Conv1d(

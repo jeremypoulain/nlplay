@@ -7,7 +7,13 @@ Papers   : https://arxiv.org/pdf/1805.09843.pdf
 import torch
 import torch.nn as nn
 from torch.nn import functional as F, init
-from nlplay.models.pytorch.utils import get_activation_func
+from nlplay.models.pytorch.utils import (
+    get_activation_func,
+    masked_max,
+    masked_mean,
+    padding_mask,
+    reset_padding_embedding,
+)
 
 
 class SWEM(nn.Module):
@@ -58,6 +64,7 @@ class SWEM(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
+        reset_padding_embedding(self.embedding)
         self.embedding.weight.requires_grad = update_embedding
 
         if self.swem_mode == "concat":
@@ -70,29 +77,34 @@ class SWEM(nn.Module):
         self.fc2 = nn.Linear(hidden_size, out_features=num_classes)
 
     def forward(self, x):
+        mask = padding_mask(x, self.embedding.padding_idx)
         x_embedding = self.embedding(x)
 
+        # All poolings are computed over real tokens only
         if self.swem_mode == "avg":
             # apply global average pooling only
-            x_embedding = x_embedding.mean(dim=1)
+            x_embedding = masked_mean(x_embedding, mask)
 
         elif self.swem_mode == "max":
             # apply global max pooling only
-            x_embedding, _ = torch.max(x_embedding, dim=1)
+            x_embedding = masked_max(x_embedding, mask)
 
         elif self.swem_mode == "concat":
-            # apply global average pooling
-            x1 = x_embedding.mean(dim=1)
-            # apply global max pooling
-            x2, _ = torch.max(x_embedding, dim=1)
-            # concat average & max pooling
-            x_embedding = torch.cat((x1, x2), dim=1)
+            # concat global average & max pooling
+            x_embedding = torch.cat((masked_mean(x_embedding, mask), masked_max(x_embedding, mask)), dim=1)
 
         elif self.swem_mode == "hier":
-            # Average pooling over each local window of swem_window words
-            x_embedding = F.avg_pool1d(x_embedding.permute(0, 2, 1), kernel_size=self.swem_window, stride=1)
-            # Apply global max-pooling operation on top of the representations for every window
-            x_embedding, _ = torch.max(x_embedding, dim=2)
+            # Average pooling over each local window of swem_window words, real tokens only
+            weights = mask.unsqueeze(1).to(x_embedding.dtype)
+            window_sum = F.avg_pool1d(x_embedding.permute(0, 2, 1) * weights, self.swem_window, stride=1)
+            window_count = F.avg_pool1d(weights, self.swem_window, stride=1)
+            window_count = window_count.squeeze(1)
+            windows = (window_sum.permute(0, 2, 1) / window_count.clamp(min=1.0 / self.swem_window).unsqueeze(2))
+            # Keep full windows only, or the partial ones for sentences shorter than swem_window
+            full = window_count > 1.0 - 1e-6
+            valid = torch.where(full.any(dim=1, keepdim=True), full, window_count > 0)
+            # Apply global max-pooling on top of the valid windows
+            x_embedding = masked_max(windows, valid)
 
         else:
             raise ValueError(f"Unknown swem_mode: {self.swem_mode}")

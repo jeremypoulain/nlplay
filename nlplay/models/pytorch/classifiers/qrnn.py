@@ -7,6 +7,7 @@ Source   : https://github.com/dreamgonfly/deep-text-classification-pytorch
 import torch
 from torch import nn
 from torch.nn import functional as F
+from nlplay.models.pytorch.utils import reset_padding_embedding
 
 
 class QRNNLayer(nn.Module):
@@ -117,6 +118,7 @@ class QRNN(nn.Module):
         )
         if pretrained_vec is not None:
             self.embedding.weight.data.copy_(torch.from_numpy(pretrained_vec))
+        reset_padding_embedding(self.embedding)
         self.dropout = nn.Dropout(p=drop_out)
         self.dense = dense
 

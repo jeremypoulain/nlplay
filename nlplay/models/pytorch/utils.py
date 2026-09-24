@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from nlplay.models.pytorch.activations import *
@@ -68,6 +69,49 @@ def embeddings_to_cosine_similarity_matrix(embedding: torch.Tensor):
     x = torch.div(dot, norm)
     x = torch.div(x, torch.unsqueeze(norm, 0))
     return x
+
+
+def reset_padding_embedding(embedding: nn.Embedding) -> None:
+    """
+    Zero the padding row, a manual or pretrained init overwrites the zero row set by nn.Embedding.
+    :param embedding: embedding layer, left unchanged if it has no padding_idx.
+    """
+    if embedding.padding_idx is not None:
+        with torch.no_grad():
+            embedding.weight[embedding.padding_idx].zero_()
+
+
+def padding_mask(x: torch.Tensor, padding_idx: int | None) -> torch.Tensor:
+    """
+    :param x: token ids of shape (batch, seq_len).
+    :param padding_idx: padding token id, None if there is no padding.
+    :returns: boolean mask of shape (batch, seq_len), True for real tokens.
+    """
+    if padding_idx is None:
+        return torch.ones_like(x, dtype=torch.bool)
+    return x != padding_idx
+
+
+def masked_mean(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    """
+    Mean over real tokens only, so that the padding length does not scale the representation.
+    :param x: features of shape (batch, seq_len, dim).
+    :param mask: boolean mask of shape (batch, seq_len), True for real tokens.
+    :returns: pooled features of shape (batch, dim), zeros for fully padded sequences.
+    """
+    mask = mask.unsqueeze(2).to(x.dtype)
+    return (x * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1.0)
+
+
+def masked_max(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    """
+    Max over real tokens only, so that padding values never win over the real ones.
+    :param x: features of shape (batch, seq_len, dim).
+    :param mask: boolean mask of shape (batch, seq_len), True for real tokens.
+    :returns: pooled features of shape (batch, dim), zeros for fully padded sequences.
+    """
+    pooled = x.masked_fill(~mask.unsqueeze(2), float("-inf")).max(dim=1).values
+    return pooled.masked_fill(~mask.any(dim=1, keepdim=True), 0.0)
 
 
 def masked_softmax(vector, mask, dim=-1, memory_efficient=False, mask_fill_value=-1e32):

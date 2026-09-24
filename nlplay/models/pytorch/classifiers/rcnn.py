@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn import init
-from nlplay.models.pytorch.utils import get_activation_func
+from nlplay.models.pytorch.utils import get_activation_func, masked_max, padding_mask, reset_padding_embedding
 
 
 class TextRCNN(nn.Module):
@@ -45,6 +45,7 @@ class TextRCNN(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
+        reset_padding_embedding(self.embedding)
         self.embedding.weight.requires_grad = update_embedding
 
         if rnn_bidirectional:
@@ -91,8 +92,8 @@ class TextRCNN(nn.Module):
         output = torch.cat([rnn_output, embeddings], dim=2)
         output = self.activation(self.fc1(output))
 
-        output = output.transpose(1, 2)
-        output = F.max_pool1d(output, output.size(2)).squeeze(2)
+        # max pooling over time, padding positions excluded
+        output = masked_max(output, padding_mask(x, self.embedding.padding_idx))
         output = self.dropout(output)
         output = self.fc2(output)
 

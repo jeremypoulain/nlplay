@@ -15,6 +15,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn import init
+from nlplay.models.pytorch.utils import reset_padding_embedding
 
 
 class RNN(nn.Module):
@@ -64,6 +65,7 @@ class RNN(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
+        reset_padding_embedding(self.embedding)
         self.embedding.weight.requires_grad = update_embedding
 
         if bidirectional:

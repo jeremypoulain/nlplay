@@ -6,6 +6,7 @@ Papers   : https://people.cs.umass.edu/~miyyer/pubs/2015_acl_dan.pdf
 import torch
 import torch.nn as nn
 from torch.nn import functional as F, init
+from nlplay.models.pytorch.utils import masked_max, masked_mean, padding_mask, reset_padding_embedding
 
 
 class DAN2L(nn.Module):
@@ -34,6 +35,7 @@ class DAN2L(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
+        reset_padding_embedding(self.embedding)
         if freeze_embedding:
             self.embedding.weight.requires_grad = False
 
@@ -44,7 +46,7 @@ class DAN2L(nn.Module):
         self.fc2 = nn.Linear(hidden_size, num_classes)
 
     def forward(self, x):
-        x = self.embedding(x).mean(dim=1)
+        x = masked_mean(self.embedding(x), padding_mask(x, self.embedding.padding_idx))
 
         if self.drop_out > 0.0:
             x = self.dropout1(x)
@@ -93,6 +95,7 @@ class DAN3L(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
+        reset_padding_embedding(self.embedding)
         if freeze_embedding:
             self.embedding.weight.requires_grad = False
 
@@ -105,7 +108,7 @@ class DAN3L(nn.Module):
         self.fc3 = nn.Linear(int(hidden_size ), num_classes)
 
     def forward(self, x):
-        x = self.embedding(x).mean(dim=1)
+        x = masked_mean(self.embedding(x), padding_mask(x, self.embedding.padding_idx))
         if self.drop_out > 0.0:
             x = self.dropout1(x)
 

@@ -13,7 +13,7 @@ from nlplay.models.pytorch.layers.layers import (
     AdditiveAttention2D,
     DotProductAttention,
 )
-from nlplay.models.pytorch.utils import init_tensor
+from nlplay.models.pytorch.utils import init_tensor, reset_padding_embedding
 
 
 class AttentiveConvNet(nn.Module):
@@ -60,6 +60,7 @@ class AttentiveConvNet(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
+        reset_padding_embedding(self.embedding)
         self.embedding.weight.requires_grad = update_embedding
 
         if self.attentive_conv_net_type == "ADVANCED":

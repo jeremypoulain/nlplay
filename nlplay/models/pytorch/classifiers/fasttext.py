@@ -6,6 +6,7 @@ Papers  : https://arxiv.org/abs/1607.01759
 import torch
 import torch.nn as nn
 from torch.nn import functional as F, init
+from nlplay.models.pytorch.utils import masked_max, masked_mean, padding_mask, reset_padding_embedding
 
 
 class PytorchFastText(nn.Module):
@@ -43,13 +44,14 @@ class PytorchFastText(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
+        reset_padding_embedding(self.embedding)
         self.embedding.weight.requires_grad = update_embedding
 
         self.fc1 = nn.Linear(embedding_size, out_features=num_classes)
 
     def forward(self, x):
-        # global average pooling
-        x_embedding = self.embedding(x).mean(dim=1)
+        # global average pooling over real tokens
+        x_embedding = masked_mean(self.embedding(x), padding_mask(x, self.embedding.padding_idx))
 
         if self.drop_out > 0.0:
             x_embedding = F.dropout(x_embedding, self.drop_out, training=self.training)

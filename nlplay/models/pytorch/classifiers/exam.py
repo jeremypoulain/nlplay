@@ -6,7 +6,7 @@ Papers  : https://arxiv.org/pdf/1811.09386.pdf
 import torch
 import torch.nn as nn
 from torch.nn import functional as F, init
-from nlplay.models.pytorch.utils import get_activation_func
+from nlplay.models.pytorch.utils import get_activation_func, reset_padding_embedding
 
 
 class EXAM(nn.Module):
@@ -73,6 +73,8 @@ class EXAM(nn.Module):
         init.xavier_uniform_(self.embedding.weight)
         if self.pretrained_vec is not None:
             self.embedding_region.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
+        reset_padding_embedding(self.embedding)
+        reset_padding_embedding(self.embedding_region)
         self.embedding_region.weight.requires_grad = update_embedding
 
     def forward(self, x):

@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn import init
+from nlplay.models.pytorch.utils import masked_max, masked_mean, padding_mask, reset_padding_embedding
 
 
 class CustomRNN(nn.Module):
@@ -40,6 +41,7 @@ class CustomRNN(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
+        reset_padding_embedding(self.embedding)
         self.embedding.weight.requires_grad = update_embedding
 
         if self.rnn_type == "lstm":
@@ -71,6 +73,7 @@ class CustomRNN(nn.Module):
 
     def forward(self, x):
 
+        mask = padding_mask(x, self.embedding.padding_idx)
         x = self.embedding(x)
 
         # Apply SpatialDropout
@@ -82,9 +85,9 @@ class CustomRNN(nn.Module):
 
         x, _ = self.rnn_encoder(x)
 
-        # apply average and max pooling on rnn output
-        avg_pool = torch.mean(x, 1)
-        max_pool, _ = torch.max(x, 1)
+        # apply average and max pooling on rnn output, padding positions excluded
+        avg_pool = masked_mean(x, mask)
+        max_pool = masked_max(x, mask)
 
         # concatenate average and max pooling
         feats = torch.cat((avg_pool, max_pool), 1)
