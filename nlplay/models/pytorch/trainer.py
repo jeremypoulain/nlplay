@@ -169,8 +169,13 @@ class PytorchModelTrainer(object):
                 self.optimizer.zero_grad()
 
                 # forward pass
-                outputs = self.model(batch_train_data)
-                loss = self.criterion(outputs, batch_train_labels)
+                # Models may compute their own training loss, e.g. hierarchical softmax over the target paths
+                loss = None
+                if hasattr(self.model, "training_loss"):
+                    loss = self.model.training_loss(batch_train_data, batch_train_labels)
+                if loss is None:
+                    outputs = self.model(batch_train_data)
+                    loss = self.criterion(outputs, batch_train_labels)
                 # Model specific regularization terms, e.g. the LEAM class embeddings penalty
                 if hasattr(self.model, "regularization_loss"):
                     loss = loss + self.model.regularization_loss()

@@ -42,6 +42,32 @@ def fasttext_hash(data: bytes) -> int:
     return h
 
 
+def read_word_vectors(path: str) -> tuple[list[str], np.ndarray]:
+    """
+    Read text word vectors, word2vec / fastText .vec format with a "count dim" header, or GloVe without.
+    :param path: vectors file.
+    :returns: (words, float32 matrix of shape (n_words, dim)).
+    """
+    words, vectors, dim = [], [], None
+    with open(path, "r", encoding="utf-8", errors="replace") as f:
+        for line_no, line in enumerate(f):
+            parts = line.rstrip().split(" ")
+            if not parts[0]:
+                continue
+            if line_no == 0 and len(parts) == 2 and all(p.isdigit() for p in parts):
+                continue
+            if dim is None:
+                dim = len(parts) - 1
+            if len(parts) < dim + 1:
+                raise ValueError(f"Line {line_no + 1} has {len(parts) - 1} values, expected {dim}")
+            # The last dim fields are the vector, some GloVe tokens contain spaces
+            words.append(" ".join(parts[:-dim]))
+            vectors.append(np.asarray(parts[-dim:], dtype=np.float32))
+    if not vectors:
+        raise ValueError(f"No vectors found in {path}")
+    return words, np.stack(vectors)
+
+
 def _sign_extend(h: int) -> int:
     # fastText stores the uint32 word hashes in an int32 vector, then reads them back as uint64
     return (h - (1 << 32) if h >= 1 << 31 else h) & _UINT64
@@ -98,15 +124,21 @@ class FastTextFeaturizer:
             tokens.append(EOS)
         return tokens
 
-    def fit(self, texts: Iterable[str]) -> "FastTextFeaturizer":
+    def fit(self, texts: Iterable[str], pretrained_words: Iterable[str] | None = None) -> "FastTextFeaturizer":
         """
         Build the vocabulary, words sorted by decreasing count (ties by first occurrence, the C++ order
         of ties is unspecified), words below min_count dropped.
         :param texts: training texts.
+        :param pretrained_words: words of pretrained vectors (read_word_vectors), added to the vocabulary
+            with one extra count and min_count lowered to 1, as fastText -pretrainedVectors does.
         :returns: self.
         """
         counts = Counter(t for text in texts for t in self.tokenize(text))
-        words = [w for w, c in sorted(counts.items(), key=lambda wc: -wc[1]) if c >= self.min_count]
+        min_count = self.min_count
+        if pretrained_words is not None:
+            counts.update(w for w in pretrained_words if not w.startswith(LABEL_PREFIX))
+            min_count = 1
+        words = [w for w, c in sorted(counts.items(), key=lambda wc: -wc[1]) if c >= min_count]
         return self._set_words(words)
 
     @classmethod
