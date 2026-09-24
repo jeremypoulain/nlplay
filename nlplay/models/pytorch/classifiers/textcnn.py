@@ -24,13 +24,11 @@ class TextCNN(nn.Module):
         dropout_prob=0.5,
         pretrained_vec=None,
         pad_index=0,
-        apply_sm: bool = True,
     ):
 
         super(TextCNN, self).__init__()
 
         self.model_type = model_type
-        self.apply_sm = apply_sm
         self.max_sent_len = max_sent_len
         self.embedding_dim = embedding_dim
         self.vocabulary_size = vocabulary_size
@@ -102,7 +100,5 @@ class TextCNN(nn.Module):
 
         out = self.fc(x)
 
-        if self.apply_sm:
-            out = F.log_softmax(out, dim=1)
 
         return out

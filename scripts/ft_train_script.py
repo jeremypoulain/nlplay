@@ -33,7 +33,7 @@ train_ds, val_ds = ds.from_csv(train_file=train_csv, val_file=test_csv, ngram_ra
 model = PytorchFastText(num_classes=ds.num_classes, vocabulary_size=ds.vocab_size,
                         embedding_size=embedding_size, drop_out=dropout)
 
-criterion = nn.NLLLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 scheduler = None
 # scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer=optimizer, mode="triangular2", base_lr=0.0001, max_lr=lr)

@@ -25,7 +25,6 @@ class LEAM(nn.Module):
         pretrained_vec=None,
         update_embedding: bool = True,
         padding_idx: int = 0,
-        apply_sm: bool = True,
         device: str = "cuda",
     ):
         """
@@ -35,7 +34,6 @@ class LEAM(nn.Module):
 
         self.num_classes = num_classes
         self.pretrained_vec = pretrained_vec
-        self.apply_sm = apply_sm
         self.device = device
 
         self.hidden_sizes = fc_hidden_sizes
@@ -93,8 +91,4 @@ class LEAM(nn.Module):
         for m in self.module_list:
             z = m(z)
 
-        if self.apply_sm:
-            out = F.log_softmax(z, dim=1)
-            return out
-        else:
-            return z
+        return z

@@ -69,7 +69,7 @@ model = TextRCNN(
     update_embedding=update_embedding
 )
 
-criterion = nn.NLLLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 scheduler = None
 

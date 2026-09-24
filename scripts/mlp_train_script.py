@@ -50,7 +50,7 @@ model = MLP(
     fc_dropouts=fc_dropouts,
 )
 
-criterion = nn.NLLLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 scheduler = None
 

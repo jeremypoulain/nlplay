@@ -80,7 +80,7 @@ model = CharCNN_Zhang(
     dropout=dropout
 )
 
-criterion = nn.NLLLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 scheduler = None
 

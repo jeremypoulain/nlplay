@@ -25,7 +25,6 @@ class MLP(nn.Module):
         padding_idx: int = 0,
         pretrained_vec=None,
         update_embedding: bool = True,
-        apply_sm: bool = True
     ):
         """
         Pooled word embeddings followed by an MLP, padding positions are ignored by the pooling.
@@ -39,8 +38,6 @@ class MLP(nn.Module):
         :param padding_idx: padding token id, its embedding is kept at zero.
         :param pretrained_vec: optional numpy matrix of shape (vocabulary_size, embedding_size).
         :param update_embedding: train (True) or freeze (False) the embedding layer.
-        :param apply_sm: return log probabilities (for NLLLoss) instead of raw scores.
-            Must be False for losses expecting raw scores, e.g. CrossEntropyLoss or ModifiedHuberLoss.
         """
         super(MLP, self).__init__()
 
@@ -51,7 +48,6 @@ class MLP(nn.Module):
 
         self.embedding_mode = embedding_mode
         self.padding_idx = padding_idx
-        self.apply_sm = apply_sm
         self.pretrained_vec = pretrained_vec
         self.embedding = nn.Embedding(
             num_embeddings=vocabulary_size,
@@ -105,6 +101,4 @@ class MLP(nn.Module):
         for m in self.module_list:
             x = m(x)
 
-        if self.apply_sm:
-            return F.log_softmax(x, dim=1)
         return x

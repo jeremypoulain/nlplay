@@ -18,7 +18,6 @@ class CharCNN_Zhang(nn.Module):
         max_seq_len: int = 1014,
         dropout: float = 0.5,
         dropout_input: float = 0.0,
-        apply_sm: bool = True
     ):
         super(CharCNN_Zhang, self).__init__()
         if model_mode == "small":
@@ -28,7 +27,6 @@ class CharCNN_Zhang(nn.Module):
             out_channels = 1024
             linear_out_dim = 2048
 
-        self.apply_sm = apply_sm
         self.dropout_input = nn.Dropout(dropout_input)
 
         # Definition of the 6 Convolution layers
@@ -95,7 +93,5 @@ class CharCNN_Zhang(nn.Module):
         x = self.fc2(x)
         out = self.fc3(x)
 
-        if self.apply_sm:
-            out = F.log_softmax(out, dim=1)
 
         return out

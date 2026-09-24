@@ -64,7 +64,6 @@ model = AttentiveConvNet(
     dropout=dropout,
     pretrained_vec=vecs,
     update_embedding=True,
-    apply_sm=False,
 )
 
 criterion = nn.CrossEntropyLoss()

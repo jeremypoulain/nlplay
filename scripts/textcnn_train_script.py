@@ -41,7 +41,7 @@ model = TextCNN(vocabulary_size=len(ds.vocab), num_classes=ds.num_classes,
                 model_type='non-static', max_sent_len=max_seq, kernel_sizes=kernel_sizes, filters=filters,
                 embedding_dim=embedding_size, pretrained_vec=vecs)
 
-criterion = nn.NLLLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 trainer = PytorchModelTrainer(model, criterion, optimizer,
                               train_ds=train_ds, val_ds=val_ds,

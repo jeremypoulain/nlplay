@@ -30,7 +30,6 @@ class SWEM(nn.Module):
         padding_idx: int = 0,
         pretrained_vec=None,
         update_embedding: bool = True,
-        apply_sm: bool = True
     ):
         """
         Args:
@@ -50,7 +49,6 @@ class SWEM(nn.Module):
 
         self.swem_mode = swem_mode
         self.swem_window = swem_window
-        self.apply_sm = apply_sm
         self.drop_out = drop_out
         self.pretrained_vec = pretrained_vec
         self.embedding_size = embedding_size
@@ -115,7 +113,5 @@ class SWEM(nn.Module):
         h_layer = self.fc1(x_embedding)
         h_layer = self.activation(h_layer)
         out = self.fc2(h_layer)
-        if self.apply_sm:
-            out = F.log_softmax(out, dim=1)
 
         return out

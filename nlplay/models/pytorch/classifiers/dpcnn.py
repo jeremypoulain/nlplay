@@ -24,12 +24,10 @@ class DPCNN(nn.Module):
         pretrained_vec=None,
         update_embedding: bool = True,
         pad_index: int = 0,
-        apply_sm: bool = True,
     ):
         super(DPCNN, self).__init__()
 
         self.num_classes = num_classes
-        self.apply_sm = apply_sm
         self.vocabulary_size = vocabulary_size
         self.embedding_size = embedding_size
         self.pretrained_vec = pretrained_vec
@@ -101,7 +99,5 @@ class DPCNN(nn.Module):
         doc_embedding = F.max_pool1d(conv_features, conv_features.size(2)).squeeze(2)
 
         out = self.fc1(self.dropout(doc_embedding))
-        if self.apply_sm:
-            out = F.log_softmax(out, dim=1)
 
         return out

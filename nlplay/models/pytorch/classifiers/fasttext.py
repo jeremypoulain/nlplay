@@ -19,7 +19,6 @@ class PytorchFastText(nn.Module):
         drop_out: float = 0.2,
         pretrained_vec=None,
         update_embedding: bool = True,
-        apply_sm: bool = True
     ):
         """
         Args:
@@ -33,7 +32,6 @@ class PytorchFastText(nn.Module):
         """
         super(PytorchFastText, self).__init__()
         self.drop_out = drop_out
-        self.apply_sm = apply_sm
         self.pretrained_vec = pretrained_vec
         self.embedding = nn.Embedding(
             num_embeddings=vocabulary_size,
@@ -57,7 +55,5 @@ class PytorchFastText(nn.Module):
             x_embedding = F.dropout(x_embedding, self.drop_out, training=self.training)
 
         out = self.fc1(x_embedding)
-        if self.apply_sm:
-            out = F.log_softmax(out, dim=1)
 
         return out

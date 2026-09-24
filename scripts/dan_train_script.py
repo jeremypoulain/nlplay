@@ -41,7 +41,7 @@ vecs = get_pretrained_vecs(input_vec_file=pretrained_vec, target_vocab=ds.vocab,
 model = DAN3L(num_classes=ds.num_classes, vocabulary_size=ds.vocab_size,
               embedding_size=embedding_size, drop_out=dropout,) # pretrained_vec=vecs)
 
-criterion = nn.NLLLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 trainer = PytorchModelTrainer(model, criterion, optimizer,
                               train_ds=train_ds, val_ds=val_ds,

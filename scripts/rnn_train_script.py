@@ -62,7 +62,6 @@ model = RNN(
     dropout=rnn_dropout,
     pretrained_vec=vecs,
     update_embedding=False,
-    apply_sm=False,
 )
 
 criterion = nn.CrossEntropyLoss()

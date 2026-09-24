@@ -30,7 +30,6 @@ class AttentiveConvNet(nn.Module):
         pretrained_vec=None,
         update_embedding: bool = True,
         pad_index=0,
-        apply_sm: bool = True,
         device: str = "cuda",
     ):
         """
@@ -47,7 +46,6 @@ class AttentiveConvNet(nn.Module):
 
         self.embedding_dim = embedding_dim
         self.attention_dim = self.embedding_dim
-        self.apply_sm = apply_sm
         self.device = device
 
         self.embedding = nn.Embedding(
@@ -186,7 +184,5 @@ class AttentiveConvNet(nn.Module):
 
         out = self.fc1(self.dropout(hidden_layer))
 
-        if self.apply_sm:
-            out = F.log_softmax(out, dim=1)
 
         return out

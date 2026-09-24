@@ -49,7 +49,6 @@ model = LEAM(
     fc_activation_functions=fc_activation_functions,
     fc_dropouts=fc_dropouts,
     ngram=ngram,
-    apply_sm=False,
 )
 
 criterion = nn.CrossEntropyLoss()

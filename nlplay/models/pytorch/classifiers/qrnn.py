@@ -107,12 +107,10 @@ class QRNN(nn.Module):
         kernel_size=3,
         num_layers=3,
         hidden_size=300,
-        apply_sm: bool = True
     ):
 
         super(QRNN, self).__init__()
 
-        self.apply_sm = apply_sm
         self.embedding = nn.Embedding(
             vocabulary_size, embedding_size, padding_idx=padding_idx
         )
@@ -151,7 +149,5 @@ class QRNN(nn.Module):
         last_timestep = x[:, :, -1]
         out = self.linear(last_timestep)
 
-        if self.apply_sm:
-            out = F.log_softmax(out, dim=1)
 
         return out

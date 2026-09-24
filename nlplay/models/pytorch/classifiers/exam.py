@@ -23,7 +23,6 @@ class EXAM(nn.Module):
         pretrained_vec=None,
         update_embedding: bool = True,
         device: str = "cuda",
-        apply_sm: bool = True
     ):
         """
         Args:
@@ -46,7 +45,6 @@ class EXAM(nn.Module):
         self.pretrained_vec = pretrained_vec
         self.padding_idx = padding_idx
         self.device = torch.device(device)
-        self.apply_sm = apply_sm
 
         # Embedding layers required for the region embedding (Word Context Scenario)
         self.embedding = nn.Embedding(
@@ -119,6 +117,4 @@ class EXAM(nn.Module):
         )
 
         out = res + residual
-        if self.apply_sm:
-            out = F.log_softmax(out, dim=1)
         return out

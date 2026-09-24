@@ -35,7 +35,7 @@ train_ds, val_ds = ds.from_csv(train_file=train_csv, val_file=test_csv, ngram_ra
 model = SWEM(num_classes=ds.num_classes, vocabulary_size=ds.vocab_size, swem_mode=swem_mode,
              hidden_size=hidden_size, embedding_size=embedding_size, drop_out=dropout)
 
-criterion = nn.NLLLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 trainer = PytorchModelTrainer(model, criterion, optimizer,
                               train_ds=train_ds, val_ds=val_ds,
