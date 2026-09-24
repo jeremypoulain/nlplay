@@ -229,3 +229,100 @@ class SupConLoss(nn.Module):
         loss = loss.view(anchor_count, batch_size).mean()
 
         return loss
+
+
+class ModifiedHuberLoss(nn.Module):
+    """
+    Modified Huber loss, PyTorch equivalent of the sklearn SGDClassifier loss="modified_huber".
+    For a raw score z = y * f(x) with y in {-1, +1}:
+        loss = max(0, 1 - z)^2   if z >= -1
+        loss = -4 * z            otherwise
+    Binary    : input of shape (N,) or (N, 1), target in {0, 1} or {-1, +1}.
+    Multiclass: input of shape (N, C) with C >= 2, target of class indices in [0, C - 1].
+                As in sklearn, a One-vs-Rest scheme is used: column k is scored against
+                +1 for class k and -1 for the others, and the C binary losses are summed.
+    Source   : https://github.com/scikit-learn/scikit-learn/blob/main/sklearn/linear_model/_sgd_fast.pyx.tp
+    """
+
+    def __init__(self, weight: torch.Tensor | None = None, reduction: str = "mean"):
+        """
+        :param weight: optional per class weight, equivalent of sklearn class_weight.
+            Binary → shape (2,), weights of the negative and positive samples.
+            Multiclass → shape (C,), as in sklearn the OvR classifier of class k weights
+            its positive samples by weight[k] and its negative samples by 1.
+        :param reduction: "mean" (average over samples), "sum" or "none" (per sample loss).
+        """
+        super().__init__()
+        if reduction not in ("mean", "sum", "none"):
+            raise ValueError(f"Unknown reduction: {reduction}")
+        if weight is not None and weight.dim() != 1:
+            raise ValueError("weight must be a 1-D tensor")
+        self.reduction = reduction
+        self.register_buffer("weight", weight)
+
+    @staticmethod
+    def _is_binary(input: torch.Tensor) -> bool:
+        if input.dim() not in (1, 2):
+            raise ValueError("input must have shape (N,), (N, 1) or (N, C)")
+        return input.dim() == 1 or input.size(1) == 1
+
+    @staticmethod
+    def _modified_huber(z: torch.Tensor) -> torch.Tensor:
+        return torch.where(z >= -1.0, torch.clamp(1.0 - z, min=0.0).square(), -4.0 * z)
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        """
+        :param input: raw scores (no sigmoid / softmax), shape (N,), (N, 1) or (N, C).
+        :param target: class labels of shape (N,) or (N, 1).
+        :returns: the reduced loss, or the per sample loss of shape (N,) if reduction is "none".
+        """
+        binary = self._is_binary(input)
+        # Flatten both sides so that (N, 1) inputs or targets never broadcast to (N, N)
+        target = target.reshape(-1).to(input.device)
+        if target.size(0) != input.size(0):
+            raise ValueError("input and target batch sizes differ")
+        weight = None if self.weight is None else self.weight.to(input)
+
+        if binary:
+            # Map {0, 1} labels to {-1, +1}, labels already in {-1, +1} are kept as is
+            input = input.reshape(-1)
+            pos = target > 0
+            loss = self._modified_huber(torch.where(pos, input, -input))
+            if weight is not None:
+                if weight.numel() != 2:
+                    raise ValueError("Binary weight must have shape (2,)")
+                loss = loss * weight[pos.long()]
+        else:
+            # One-vs-Rest targets in {-1, +1} of shape (N, C)
+            n_classes = input.size(1)
+            one_hot = F.one_hot(target.long(), num_classes=n_classes).bool()
+            loss = self._modified_huber(torch.where(one_hot, input, -input))
+            if weight is not None:
+                if weight.numel() != n_classes:
+                    raise ValueError(f"weight must have shape ({n_classes},)")
+                loss = loss * torch.where(one_hot, weight, torch.ones_like(weight))
+            loss = loss.sum(dim=1)
+
+        if self.reduction == "mean":
+            return loss.mean()
+        if self.reduction == "sum":
+            return loss.sum()
+        return loss
+
+    @staticmethod
+    @torch.no_grad()
+    def predict_proba(input: torch.Tensor) -> torch.Tensor:
+        """
+        Probability estimates from raw scores, same formula as sklearn SGDClassifier.predict_proba.
+        :param input: raw scores of shape (N,), (N, 1) or (N, C).
+        :returns: probabilities of shape (N, 2) for binary inputs, (N, C) otherwise.
+        """
+        if ModifiedHuberLoss._is_binary(input):
+            prob = (torch.clamp(input.reshape(-1), -1.0, 1.0) + 1.0) / 2.0
+            return torch.stack([1.0 - prob, prob], dim=1)
+
+        prob = (torch.clamp(input, -1.0, 1.0) + 1.0) / 2.0
+        norm = prob.sum(dim=1, keepdim=True)
+        # Rows where every OvR score is <= -1 get a uniform distribution
+        uniform = torch.full_like(prob, 1.0 / prob.size(1))
+        return torch.where(norm > 0, prob / norm.clamp(min=1e-12), uniform)
