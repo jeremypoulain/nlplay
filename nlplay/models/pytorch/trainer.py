@@ -6,7 +6,7 @@ import numpy as np
 from datetime import datetime
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
-from nlplay.models.pytorch.lr_finder import LRFinder
+from nlplay.models.pytorch.lr_finder import LRFinder, compute_training_loss, set_learning_rate
 from nlplay.models.pytorch.utils import set_seed, get_gpu_info
 from nlplay.models.pytorch.metrics import compute_accuracy
 from nlplay.utils.utils import get_elapsed_time
@@ -83,7 +83,23 @@ class PytorchModelTrainer(object):
 
         logging.getLogger(__name__)
 
-    def train_evaluate(self, seed=42, check_dl=True, run_lr_finder=False,         show_lr_plot: bool = False,):
+    def train_evaluate(
+        self,
+        seed=42,
+        check_dl=True,
+        run_lr_finder=False,
+        show_lr_plot: bool = False,
+        lr_finder_kwargs: dict | None = None,
+        apply_lr_finder: bool = False,
+    ):
+        """
+        :param seed: random seed.
+        :param check_dl: log the shapes of a first batch.
+        :param run_lr_finder: run a learning rate range test first, the model and optimizer are restored after it.
+        :param show_lr_plot: show the range test plot, it is always saved as a png file.
+        :param lr_finder_kwargs: LRFinder.range_test arguments, e.g. dict(start_lr=1e-6, end_lr=10, num_iter=100).
+        :param apply_lr_finder: train with the suggested learning rate, also as the scheduler base rate.
+        """
 
         set_seed(seed)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -112,7 +128,9 @@ class PytorchModelTrainer(object):
             lr_finder = LRFinder(
                 self.model, self.optimizer, criterion=self.criterion, device=device
             )
-            lr_finder.range_test(self.train_dl, start_lr=10e-6, end_lr=1, num_iter=100)
+            suggested_lr = lr_finder.range_test(
+                self.train_dl, **{"start_lr": 1e-6, "end_lr": 10, "num_iter": 100, **(lr_finder_kwargs or {})}
+            )
             lr_finder.plot(
                 show=show_lr_plot,
                 output_path="LR_finder_{}_{}.png".format(
@@ -121,6 +139,9 @@ class PytorchModelTrainer(object):
                 ),
             )
             logging.info("LR Finder Run Completed....")
+            if apply_lr_finder and suggested_lr is not None:
+                set_learning_rate(self.optimizer, suggested_lr, self.lr_scheduler)
+                logging.info("Training with the suggested learning rate {:.3g}".format(suggested_lr))
 
         # Checking the dataloaders
         if check_dl:
@@ -169,16 +190,8 @@ class PytorchModelTrainer(object):
                 self.optimizer.zero_grad()
 
                 # forward pass
-                # Models may compute their own training loss, e.g. hierarchical softmax over the target paths
-                loss = None
-                if hasattr(self.model, "training_loss"):
-                    loss = self.model.training_loss(batch_train_data, batch_train_labels)
-                if loss is None:
-                    outputs = self.model(batch_train_data)
-                    loss = self.criterion(outputs, batch_train_labels)
-                # Model specific regularization terms, e.g. the LEAM class embeddings penalty
-                if hasattr(self.model, "regularization_loss"):
-                    loss = loss + self.model.regularization_loss()
+                # Model specific losses are supported, e.g. hierarchical softmax or the LEAM regularization
+                loss = compute_training_loss(self.model, self.criterion, batch_train_data, batch_train_labels)
                 # Store loss values
                 self.all_train_loss_hist.append(loss.item())
                 losses.append(loss.item())
