@@ -6,7 +6,7 @@ Papers  : https://arxiv.org/abs/1607.01759
 import torch
 import torch.nn as nn
 from torch.nn import functional as F, init
-from nlplay.models.pytorch.utils import masked_max, masked_mean, padding_mask, reset_padding_embedding
+from nlplay.models.pytorch.utils import reset_padding_embedding
 
 
 class PytorchFastText(nn.Module):
@@ -21,39 +21,46 @@ class PytorchFastText(nn.Module):
         update_embedding: bool = True,
     ):
         """
-        Args:
-            num_classes (int) : number of classes
-            vocabulary_size (int): number of items in the vocabulary
-            embedding_size (int): size of the embeddings
-            padding_idx (int): default 0; Embedding will not use this index
-            drop_out (float) : default 0.2; drop out rate applied to the embedding layer
-            pretrained_vec (nd.array): default None : numpy matrix containing pretrained word vectors
-            update_embedding: bool (boolean) : default True : option to train/freeze embedding layer weights
+        Mean of the token embeddings followed by a linear layer, returns raw scores.
+        :param num_classes: number of classes.
+        :param vocabulary_size: number of items in the vocabulary.
+        :param embedding_size: size of the embeddings.
+        :param padding_idx: padding token id, excluded from the mean and kept at zero.
+        :param drop_out: dropout rate applied to the averaged embedding, in [0, 1).
+        :param pretrained_vec: optional numpy matrix of shape (vocabulary_size, embedding_size).
+        :param update_embedding: train (True) or freeze (False) the embedding layer.
         """
         super(PytorchFastText, self).__init__()
+        if not 0.0 <= drop_out < 1.0:
+            raise ValueError("drop_out must be in [0, 1)")
         self.drop_out = drop_out
         self.pretrained_vec = pretrained_vec
-        self.embedding = nn.Embedding(
+        # EmbeddingBag averages without building the (batch, seq_len, embedding_size) tensor,
+        # padding_idx is excluded from the mean
+        self.embedding = nn.EmbeddingBag(
             num_embeddings=vocabulary_size,
             embedding_dim=embedding_size,
+            mode="mean",
             padding_idx=padding_idx,
         )
-        if self.pretrained_vec is not None:
-            self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
-        else:
-            init.xavier_uniform_(self.embedding.weight)
+        with torch.no_grad():
+            if self.pretrained_vec is not None:
+                pretrained = torch.as_tensor(self.pretrained_vec, dtype=self.embedding.weight.dtype)
+                if tuple(pretrained.shape) != (vocabulary_size, embedding_size):
+                    raise ValueError(
+                        f"pretrained_vec must have shape {(vocabulary_size, embedding_size)}, "
+                        f"got {tuple(pretrained.shape)}"
+                    )
+                self.embedding.weight.copy_(pretrained)
+            else:
+                init.xavier_uniform_(self.embedding.weight)
         reset_padding_embedding(self.embedding)
-        self.embedding.weight.requires_grad = update_embedding
+        self.embedding.weight.requires_grad_(update_embedding)
 
         self.fc1 = nn.Linear(embedding_size, out_features=num_classes)
 
     def forward(self, x):
-        # global average pooling over real tokens
-        x_embedding = masked_mean(self.embedding(x), padding_mask(x, self.embedding.padding_idx))
-
-        if self.drop_out > 0.0:
-            x_embedding = F.dropout(x_embedding, self.drop_out, training=self.training)
-
-        out = self.fc1(x_embedding)
-
-        return out
+        # global average pooling over real tokens, fully padded rows give a zero vector
+        x_embedding = self.embedding(x)
+        x_embedding = F.dropout(x_embedding, self.drop_out, training=self.training)
+        return self.fc1(x_embedding)

@@ -71,7 +71,7 @@ def embeddings_to_cosine_similarity_matrix(embedding: torch.Tensor):
     return x
 
 
-def reset_padding_embedding(embedding: nn.Embedding) -> None:
+def reset_padding_embedding(embedding: nn.Embedding | nn.EmbeddingBag) -> None:
     """
     Zero the padding row, a manual or pretrained init overwrites the zero row set by nn.Embedding.
     :param embedding: embedding layer, left unchanged if it has no padding_idx.
