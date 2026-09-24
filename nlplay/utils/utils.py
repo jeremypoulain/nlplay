@@ -1,11 +1,9 @@
 """Various utils"""
+import logging
 import math
-import os
 import random
 import time
-from datetime import datetime
 from pathlib import Path
-from urllib.request import urlopen
 import numpy as np
 import pandas as pd
 import requests
@@ -14,11 +12,11 @@ from sklearn.decomposition import PCA
 from tqdm import tqdm
 
 
-def _loguniform(min_val, max_val, len=5):
+def _loguniform(min_val, max_val, n=5):
     out = []
     _min = math.log2(float(min_val))
     _max = math.log2(float(max_val))
-    for i in range(len):
+    for i in range(n):
         out.append(2 ** random.uniform(_min, _max))
     return out
 
@@ -27,8 +25,17 @@ def get_topk_accuracy(
     y_true: np.ndarray, y_pred: np.ndarray, k: int = 3, include_details=False
 ):
     """
-    vectorized function to compute top K accuracy
+    Vectorized top K accuracy.
+    :param y_true: true labels of shape (n_samples,).
+    :param y_pred: predicted labels ranked from the most to the least likely, shape (n_samples, n_labels).
+        Scores or probabilities must be ranked first, e.g. with np.argsort(-scores, axis=1).
+    :param k: number of top ranked labels considered.
+    :param include_details: also return the total, correct and wrong counts.
+    :returns: the top K accuracy, or (accuracy, total, ok, ko) if include_details is True.
     """
+    if len(y_true) == 0:
+        raise ValueError("y_true is empty")
+
     # Only keep K first columns
     inscope_ypred = y_pred[:, 0:k]
 
@@ -47,71 +54,75 @@ def get_topk_accuracy(
         return acc_score
 
 
-def download_file_from_google_drive(id: str, destination: str, file_size: int):
-    def get_confirm_token(response):
-        for key, value in response.cookies.items():
-            if key.startswith("download_warning"):
-                return value
-
-        return None
-
-    def save_response_content(response, destination, file_size):
-        CHUNK_SIZE = 32768
-        with open(destination, "wb") as file:
-            size = file_size
-            pieces = int(size / CHUNK_SIZE)
-            with tqdm(
-                total=pieces,
-                desc="{} Downloading Dataset...".format(
-                    datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-                ),
-                unit="B",
-            ) as pbar:
-                for chunk in response.iter_content(CHUNK_SIZE):
-                    pbar.update(1)
-                    if chunk:  # filter out keep-alive new chunks
-                        file.write(chunk)
-
-    URL = "https://docs.google.com/uc?export=download"
-    session = requests.Session()
-    response = session.get(URL, params={"id": id}, stream=True)
-    token = get_confirm_token(response)
-
-    if token:
-        params = {"id": id, "confirm": token}
-        response = session.get(URL, params=params, stream=True)
-
-    save_response_content(response, destination, file_size)
-
-
-def download_from_url(url: str, dst: Path):
-    file_size = int(urlopen(url).info().get("Content-Length", -1))
-    if os.path.exists(dst):
-        first_byte = os.path.getsize(dst)
-    else:
-        first_byte = 0
-    if first_byte >= file_size:
-        return file_size
-    header = {"Range": "bytes=%s-%s" % (first_byte, file_size)}
-    pbar = tqdm(
-        total=file_size,
-        initial=first_byte,
-        unit="B",
-        unit_scale=True,
-        desc="Downloading Dataset...",
-    )
-    req = requests.get(url, headers=header, stream=True)
-    with (open(dst, "ab")) as f:
-        for chunk in req.iter_content(chunk_size=1024):
+def _write_stream(response: requests.Response, destination, mode: str, total, initial: int = 0, desc: str = ""):
+    with open(destination, mode) as file, tqdm(
+        total=total, initial=initial, unit="B", unit_scale=True, desc=desc
+    ) as pbar:
+        for chunk in response.iter_content(chunk_size=1024 * 64):
+            # filter out keep-alive new chunks
             if chunk:
-                f.write(chunk)
-                pbar.update(1024)
-    pbar.close()
-
-    return file_size
+                file.write(chunk)
+                pbar.update(len(chunk))
 
 
-def read_config(config_file_path: str = None):
+def download_file_from_google_drive(file_id: str, destination: str, file_size: int | None = None, timeout: float = 60):
+    """
+    Download a publicly shared Google Drive file, including large files behind the virus scan warning.
+    :param file_id: Google Drive file id.
+    :param destination: output file path.
+    :param file_size: expected size in bytes, only used for the progress bar.
+    :param timeout: connection and read timeout in seconds.
+    """
+    # confirm=t skips the virus scan warning page served for large files
+    url = "https://drive.usercontent.google.com/download"
+    params = {"id": file_id, "export": "download", "confirm": "t"}
+    with requests.get(url, params=params, stream=True, timeout=timeout) as response:
+        response.raise_for_status()
+        # An HTML page means an error or warning page instead of the file content
+        if response.headers.get("Content-Type", "").startswith("text/html"):
+            raise RuntimeError(
+                f"Google Drive returned an HTML page instead of file {file_id}, "
+                "check that it is shared publicly and that its download quota is not exceeded"
+            )
+        _write_stream(response, destination, "wb", file_size, desc="Downloading Dataset...")
+
+
+def download_from_url(url: str, dst: Path, timeout: float = 60) -> int:
+    """
+    Download a file, resuming a partial download when the server supports range requests.
+    :param url: file url.
+    :param dst: output file path.
+    :param timeout: connection and read timeout in seconds.
+    :returns: the size of the downloaded file in bytes.
+    """
+    dst = Path(dst)
+    first_byte = dst.stat().st_size if dst.exists() else 0
+    headers = {"Range": f"bytes={first_byte}-"} if first_byte > 0 else {}
+
+    with requests.get(url, headers=headers, stream=True, timeout=timeout) as response:
+        if response.status_code == 416:
+            # Nothing left to download, unless the local file does not match the remote size
+            total = response.headers.get("Content-Range", "").rpartition("/")[2]
+            if not total.isdigit() or int(total) == first_byte:
+                return first_byte
+            dst.unlink()
+            return download_from_url(url, dst, timeout)
+        response.raise_for_status()
+
+        if response.status_code == 206:
+            # Partial content → append the missing bytes, Content-Range is "bytes start-end/total"
+            total = response.headers.get("Content-Range", "").rpartition("/")[2]
+            _write_stream(response, dst, "ab", int(total) if total.isdigit() else None, first_byte,
+                          desc="Downloading Dataset...")
+        else:
+            # The server ignored the Range header and sends the whole file → restart from scratch
+            length = response.headers.get("Content-Length")
+            _write_stream(response, dst, "wb", int(length) if length else None, desc="Downloading Dataset...")
+
+    return dst.stat().st_size
+
+
+def read_config(config_file_path: str):
     with open(config_file_path, "r", encoding="utf-8") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
     return cfg
@@ -119,12 +130,15 @@ def read_config(config_file_path: str = None):
 
 def get_elapsed_time(start_time: float):
     """
-    Compute & format elapsed time between a start & stop time
+    Compute and format the elapsed time since start_time.
+    :param start_time: start time as returned by time.time().
+    :returns: elapsed time formatted as "Xm Ys", or "Xh Ym Zs" above one hour.
     """
-    now = time.time()
-    s = now - start_time
-    m = math.floor(s / 60)
-    s -= m * 60
+    s = time.time() - start_time
+    h, s = divmod(s, 3600)
+    m, s = divmod(s, 60)
+    if h:
+        return "%dh %dm %ds" % (h, m, s)
     return "%dm %ds" % (m, s)
 
 
@@ -136,142 +150,93 @@ def human_readable_size(size: int, decimal_places=2):
     return f"{size:.{decimal_places}f}{unit}"
 
 
-def df_optimize(df: pd.DataFrame, catg_conv_threshold: float = 0.4):
+def df_optimize(df: pd.DataFrame, catg_conv_threshold: float = 0.4, downcast_float: bool = True):
     """
-    Optimize pandas dataframe memory usage for numerical and string features
+    Reduce the memory usage of a dataframe, in place.
     Adapted from https://www.kaggle.com/nilanml/imdb-review-deep-model-94-89-accuracy
-    df : INput dataframe
-    catg_conv_threshold : threshold use to trigger the conversion of string object to categorical ones
-    # TODO: Null values check for numerics!
-            Column sparsity?
+    Integers → smallest integer type holding all their values.
+    Floats → float32 if downcast_float, never float16 which only keeps about 3 significant digits.
+    Strings → category when the ratio of unique values is below catg_conv_threshold.
+    :param df: input dataframe, modified in place.
+    :param catg_conv_threshold: max ratio of unique values to convert a string column to category.
+    :param downcast_float: convert float64 columns to float32, which keeps about 7 significant digits.
+    :returns: the optimized dataframe.
     """
-
-    numerics = ["int16", "int32", "int64", "float16", "float32", "float64"]
-    strings = ["object"]
+    start_mem = df.memory_usage(deep=True).sum() / 1024 ** 2
     df_size = df.shape[0]
-    start_mem = df.memory_usage().sum() / 1024 ** 2
     for col in df.columns:
-        col_type = df[col].dtypes
-        if col_type in numerics:
-            c_min = df[col].min()
-            c_max = df[col].max()
-            if str(col_type)[:3] == "int":
-                if c_min > np.iinfo(np.int8).min and c_max < np.iinfo(np.int8).max:
-                    df[col] = df[col].astype(np.int8)
-                elif c_min > np.iinfo(np.int16).min and c_max < np.iinfo(np.int16).max:
-                    df[col] = df[col].astype(np.int16)
-                elif c_min > np.iinfo(np.int32).min and c_max < np.iinfo(np.int32).max:
-                    df[col] = df[col].astype(np.int32)
-                elif c_min > np.iinfo(np.int64).min and c_max < np.iinfo(np.int64).max:
-                    df[col] = df[col].astype(np.int64)
-            else:
-                # TODO: Null values check !
-                if (
-                    c_min > np.finfo(np.float16).min
-                    and c_max < np.finfo(np.float16).max
-                ):
-                    df[col] = df[col].astype(np.float16)
-                elif (
-                    c_min > np.finfo(np.float32).min
-                    and c_max < np.finfo(np.float32).max
-                ):
-                    df[col] = df[col].astype(np.float32)
-                else:
-                    df[col] = df[col].astype(np.float64)
-
-        if col_type in strings:
-            if (df[col].nunique() / df_size) <= catg_conv_threshold:
+        col_type = df[col].dtype
+        if pd.api.types.is_bool_dtype(col_type):
+            continue
+        if pd.api.types.is_integer_dtype(col_type):
+            df[col] = pd.to_numeric(df[col], downcast="integer" if df[col].min() < 0 else "unsigned")
+        elif pd.api.types.is_float_dtype(col_type):
+            if downcast_float:
+                df[col] = pd.to_numeric(df[col], downcast="float")
+        elif col_type == object or isinstance(col_type, pd.StringDtype):
+            # object for pandas < 3, str (StringDtype) since pandas 3
+            if df_size > 0 and df[col].nunique() / df_size <= catg_conv_threshold:
                 df[col] = df[col].astype("category")
 
-    end_mem = df.memory_usage().sum() / 1024 ** 2
-    print("Memory usage after optimization is: {:.2f} MB".format(end_mem))
-    print("Decreased by {:.1f}%".format(100 * (start_mem - end_mem) / start_mem))
+    end_mem = df.memory_usage(deep=True).sum() / 1024 ** 2
+    logging.info("Memory usage after optimization is: {:.2f} MB".format(end_mem))
+    if start_mem > 0:
+        logging.info("Decreased by {:.1f}%".format(100 * (start_mem - end_mem) / start_mem))
 
     return df
 
 
 def postprocess_pretrained_vecs(
-    in_vec_file: str = "", out_vec_filepath: str = "", N: int = 2
+    in_vec_file: str = "", out_vec_filepath: str = "", N: int = 2, strip_pos_suffix: bool = False
 ):
     """
     Title   : All-but-the-Top: Simple and Effective Postprocessing for Word Representations - 2017
     Author  : Jiaqi Mu, Suma Bhat, Pramod Viswanath
     Papers  : https://arxiv.org/pdf/1702.01417
     Source  : https://blogs.nlmatics.com/nlp/sentence-embeddings/2020/08/07/Smooth-Inverse-Frequency-Frequency-(SIF)-Embeddings-in-Golang.html
+    Note    : Removes the common mean vector and the top N principal components from every word vector.
+              Reads and writes the text format (word2vec with a "count dim" header, or GloVe without).
+    :param in_vec_file: input text vectors file.
+    :param out_vec_filepath: output text vectors file, with a header if the input had one.
+    :param N: number of top principal components to remove.
+    :param strip_pos_suffix: remove a "_POS" suffix from the words, e.g. "run_VERB" → "run".
     """
-    embs = []
-
-    # map indexes of word vectors in matrix to their corresponding words
-    idx_to_word = dict()
-    dimension = 0
-
-    # append each vector to a 2-D matrix and calculate average vector
-    with open(in_vec_file, "rb") as f:
-        first_line = []
-        for line in f:
-            first_line = line.rstrip().split()
-            dimension = len(first_line) - 1
-            if dimension < 100:
+    words, vectors, header, dim = [], [], False, None
+    with open(in_vec_file, "r", encoding="utf-8", errors="replace") as f:
+        for line_no, line in enumerate(f):
+            parts = line.rstrip().split(" ")
+            if not parts[0]:
                 continue
-            print("dimension: ", dimension)
+            # word2vec header "count dim"
+            if line_no == 0 and len(parts) == 2 and all(p.isdigit() for p in parts):
+                header = True
+                continue
+            if dim is None:
+                dim = len(parts) - 1
+            if len(parts) < dim + 1:
+                raise ValueError(f"Line {line_no + 1} has {len(parts) - 1} values, expected {dim}")
+            # The last dim fields are the vector, some GloVe tokens contain spaces
+            word = " ".join(parts[:-dim])
+            if strip_pos_suffix:
+                word = word.rsplit("_", 1)[0]
+            words.append(word)
+            vectors.append(np.asarray(parts[-dim:], dtype=np.float32))
 
-            break
-        avg_vec = [0] * dimension
-        vocab_size = 0
-        word = str(first_line[0].decode("utf-8"))
-        word = word.split("_")[0]
+    if not vectors:
+        raise ValueError(f"No vectors found in {in_vec_file}")
+    if not 0 <= N < dim:
+        raise ValueError(f"N must be in [0, {dim}), got {N}")
 
-        idx_to_word[vocab_size] = word
-        vec = [float(x) for x in first_line[1:]]
-        avg_vec = [vec[i] + avg_vec[i] for i in range(len(vec))]
-        vocab_size += 1
-        embs.append(vec)
-        for line in f:
-            line = line.rstrip().split()
-            word = str(line[0].decode("utf-8"))
-            word = word.split("_")[0]
-            idx_to_word[vocab_size] = word
-            vec = [float(x) for x in line[1:]]
-            avg_vec = [vec[i] + avg_vec[i] for i in range(len(vec))]
-            vocab_size += 1
-            embs.append(vec)
-        avg_vec = [x / vocab_size for x in avg_vec]
-    # convert to numpy array
-    embs = np.array(embs)
-
-    # subtract average vector from each vector
-    for i in range(len(embs)):
-        new_vec = [embs[i][j] - avg_vec[j] for j in range(len(avg_vec))]
-        embs[i] = np.array(new_vec)
-
-    # principal component analysis using sklearn
-    pca = PCA()
-    pca.fit(embs)
-
-    # remove the top N components from each vector
-    for i in range(len(embs)):
-        preprocess_sum = [0] * dimension
-        for j in range(N):
-            princip = np.array(pca.components_[j])
-            preprocess = princip.dot(embs[i])
-            preprocess_vec = [princip[k] * preprocess for k in range(len(princip))]
-            preprocess_sum = [
-                preprocess_sum[k] + preprocess_vec[k]
-                for k in range(len(preprocess_sum))
-            ]
-        embs[i] = np.array(
-            [embs[i][j] - preprocess_sum[j] for j in range(len(preprocess_sum))]
-        )
+    # Subtract the average vector, then remove the projections on the top N principal components
+    embs = np.stack(vectors)
+    embs -= embs.mean(axis=0)
+    if N > 0:
+        components = PCA(n_components=N).fit(embs).components_
+        embs -= (embs @ components.T) @ components
 
     # write back new word vector file
-    file = open(out_vec_filepath, "w+", encoding="utf-8")
-    idx = 0
-    for vec in embs:
-        file.write(idx_to_word[idx])
-        file.write(" ")
-        for num in vec:
-            file.write(str(num))
-            file.write(" ")
-        file.write("\n")
-        idx += 1
-    file.close()
+    with open(out_vec_filepath, "w", encoding="utf-8") as file:
+        if header:
+            file.write(f"{len(words)} {dim}\n")
+        for word, vec in zip(words, embs):
+            file.write(word + " " + " ".join(f"{x:.7g}" for x in vec) + "\n")
