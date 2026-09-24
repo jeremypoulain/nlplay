@@ -4,6 +4,44 @@
 NLPlay is a toolbox / repository, centralizing implementations of key NLP algorithms in one place,to tackle Text Classification, Sentiment Analysis & Question Answering problems.
 The idea is to have a collection of ready to use algorithms & building blocks , to allow people to quickly benchmark/customize those different model architectures, over standard datasets or their own ones.  
 
+## Installation
+Requirements: Python >= 3.10 and PyTorch >= 2.0.
+
+```bash
+git clone https://github.com/jeremypoulain/nlplay.git
+cd nlplay
+pip install -r requirements.txt
+```
+
+`pip install torch` installs the default CUDA build of PyTorch, which may not support your GPU. Pick the wheel matching
+your GPU generation from the [PyTorch install page](https://pytorch.org/get-started/locally/), for example:
+
+| GPU generation | Compute capability | PyTorch build |
+| -------------- | ------------------ | ------------- |
+| Turing, Ampere, Ada, Hopper, Blackwell (RTX 20xx and newer) | >= 7.5 | default CUDA 13 build |
+| Maxwell, Pascal, Volta (e.g. GTX 9xx / 10xx, Titan V) | 5.x - 7.0 | CUDA 12.6 build, 2.14 is the last official release with it |
+| No GPU | - | CPU build |
+
+For a Pascal GPU such as a GTX 1080, install PyTorch before the other requirements:
+
+```bash
+pip install torch==2.14.0 --index-url https://download.pytorch.org/whl/cu126
+```
+
+Check that the installed build supports the GPU, `get_arch_list()` must contain its architecture (`sm_61` for a GTX 1080):
+
+```python
+import torch
+
+print(torch.__version__, torch.version.cuda)       # e.g. 2.14.0+cu126 12.6
+print(torch.cuda.is_available(), torch.cuda.get_device_name(), torch.cuda.get_device_capability())
+print(torch.cuda.get_arch_list())
+```
+
+GPUs without Tensor Cores (Pascal and older) gain little from mixed precision, FP32 (the default) is the sensible choice.
+
+Run the unit tests with `pip install pytest` then `python -m pytest tests`.
+
 ## Supported models & features
 
 ### Python/Sklearn (CPU Only)
@@ -49,6 +87,7 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 -  **LiSHT/LightRelu**: [LiSHT: Non-Parametric Linearly Scaled Hyperbolic Tangent Activation Function for Neural Networks - 2019](https://arxiv.org/abs/1901.05894) - Source : [Less Wright](https://github.com/lessw2020/LightRelu)
 -  **Threshold Relu** : [An improved activation function for deep learning - Threshold Relu, or TRelu - 2019](https://github.com/lessw2020/TRelu) - Source : [Less Wright](https://github.com/lessw2020/TRelu)
 ## Additional Pytorch loss
+-  **ModifiedHuberLoss**  : PyTorch equivalent of the scikit-learn SGDClassifier `modified_huber` loss, binary & multiclass (One-vs-Rest), with `predict_proba`
 -  **FocalLoss**          : [Focal Loss for Dense Object Detection - 2017](https://arxiv.org/pdf/1708.02002) - Source : [mbsariyildiz](https://github.com/mbsariyildiz/focal-loss.pytorch)
 -  **LabelSmoothingLoss** : [Rethinking the Inception Architecture for Computer Vision - 2015](https://arxiv.org/pdf/1512.00567.pdf) - Source : [OpenNMT](https://github.com/OpenNMT/OpenNMT-py/blob/master/onmt/utils/loss.py)
 -  **Supervised Contrastive Loss**: [Supervised Contrastive Learning - 2020](https://arxiv.org/pdf/2004.11362.pdf) - Source : [Yonglong Tian](https://github.com/HobbitLong/SupContrast)
@@ -68,8 +107,6 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
 ## Todo / Next Steps:
 1. Include additional Models :
     -  **HAN**          : [Hierarchical Attention Networks for Document Classification - 2016](https://www.aclweb.org/anthology/N16-1174.pdf)
-    -  **SIF**          : [A Simple but Tough-to-Beat Baseline for Sentence Embeddings - 2016](https://openreview.net/forum?id=SyK00v5xx)
-    -  **USIF**         : [Unsupervised Random Walk Sentence Embeddings: A Strong but Simple Baseline - 2018](https://www.aclweb.org/anthology/W18-3012.pdf)
     -  **RE2**          : [Simple and Effective Text Matching with Richer Alignment Features - 2019](https://arxiv.org/pdf/1908.00300)
     -  **BiMPM**        : [Bilateral Multi-Perspective Matching for Natural Language Sentences - 2017](https://arxiv.org/pdf/1702.03814)
     -  **MaLSTM/MaGRU** : [Siamese Recurrent Architectures for Learning Sentence Similarity - 2016](https://www.aaai.org/ocs/index.php/AAAI/AAAI16/paper/download/12195/12023)
