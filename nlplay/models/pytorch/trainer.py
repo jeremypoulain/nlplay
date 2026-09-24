@@ -167,6 +167,9 @@ class PytorchModelTrainer(object):
                 # forward pass
                 outputs = self.model(batch_train_data)
                 loss = self.criterion(outputs, batch_train_labels)
+                # Model specific regularization terms, e.g. the LEAM class embeddings penalty
+                if hasattr(self.model, "regularization_loss"):
+                    loss = loss + self.model.regularization_loss()
                 # Store loss values
                 self.all_train_loss_hist.append(loss.item())
                 losses.append(loss.item())

@@ -9,7 +9,7 @@ Source  : https://github.com/guoyinwang/LEAM
 import torch
 import torch.nn as nn
 from torch.nn import functional as F, init
-from nlplay.models.pytorch.utils import get_activation_func, reset_padding_embedding
+from nlplay.models.pytorch.utils import get_activation_func, padding_mask, reset_padding_embedding
 
 
 class LEAM(nn.Module):
@@ -26,15 +26,22 @@ class LEAM(nn.Module):
         update_embedding: bool = True,
         padding_idx: int = 0,
         device: str = "cuda",
+        class_penalty: float = 1.0,
     ):
         """
+        :param ngram: width of the attention window over the word / label compatibility scores,
+            55 in the reference code.
         :param device: unused, kept for backward compatibility, the input device is used.
+        :param class_penalty: weight of the class embeddings regularization of the paper, see
+            regularization_loss, 0 → disabled.
         """
         super(LEAM, self).__init__()
 
         self.num_classes = num_classes
         self.pretrained_vec = pretrained_vec
         self.device = device
+        self.class_penalty = class_penalty
+        self.padding_idx = padding_idx
 
         self.hidden_sizes = fc_hidden_sizes
         self.embedding = nn.Embedding(
@@ -51,7 +58,7 @@ class LEAM(nn.Module):
 
         self.embedding_class = nn.Embedding(num_classes, embedding_size)
         self.conv = torch.nn.Conv1d(
-            in_channels=num_classes, out_channels=num_classes, kernel_size=2 * ngram + 1, padding=ngram
+            in_channels=num_classes, out_channels=num_classes, kernel_size=ngram, padding="same"
         )
 
         self.hidden_sizes = [embedding_size] + self.hidden_sizes + [num_classes]
@@ -81,14 +88,28 @@ class LEAM(nn.Module):
         g = torch.bmm(cls_emb_norm, w_emb_norm)
         g = F.relu(self.conv(g))
         beta = torch.max(g, 1)[0].unsqueeze(2)
-        beta = F.softmax(beta, 1)
+        # Softmax over the real tokens only, fully padded sequences get a zero attention
+        mask = padding_mask(x, self.padding_idx).unsqueeze(2)
+        beta = F.softmax(beta.masked_fill(~mask, float("-inf")), 1).nan_to_num(0.0)
 
         # z : weighted averaging of word embeddings through the proposed label attentive score
         z = torch.mul(beta, w_emb)
         z = z.sum(1)
 
+        return self._classify(z)
+
+    def _classify(self, z):
         # Optional MLP layers on top
         for m in self.module_list:
             z = m(z)
-
         return z
+
+    def regularization_loss(self) -> torch.Tensor:
+        """
+        Class embeddings regularization of the paper: each class embedding, fed to the classifier,
+        must predict its own class. The PytorchModelTrainer adds it to the training loss.
+        :returns: class_penalty * cross entropy of the class embeddings classification.
+        """
+        logits = self._classify(self.embedding_class.weight)
+        targets = torch.arange(self.num_classes, device=logits.device)
+        return self.class_penalty * F.cross_entropy(logits, targets)
