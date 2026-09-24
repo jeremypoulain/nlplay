@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 import torch
 import torch.nn as nn
 from torch.nn import functional as F, init
@@ -11,92 +13,110 @@ class MLP(nn.Module):
         vocabulary_size: int,
         embedding_size: int = 300,
         embedding_mode: str = "avg",
-        fc_hidden_sizes: list = [256, 128, 64],
-        fc_activation_functions: list = ["relu", "relu", "relu"],
-        fc_dropouts: list = [0.2, None, None],
+        fc_hidden_sizes: Sequence[int] = (256, 128, 64),
+        fc_activation_functions: Sequence[str] = ("relu", "relu", "relu"),
+        fc_dropouts: Sequence[float | None] = (0.2, None, None),
         padding_idx: int = 0,
         pretrained_vec=None,
         update_embedding: bool = True,
         apply_sm: bool = True
     ):
         """
-        Args:
-            num_classes (int) : number of classes
-            vocabulary_size (int): number of items in the vocabulary
-            embedding_size (int): size of the embeddings
-            embedding_mode (str): "avg","max" or "concat"
-            fc_activation_functions (str)
-            dropout (float) : default 0.2; drop out rate applied to the embedding layer
-            padding_idx (int): default 0; Embedding will not use this index
-            pretrained_vec (nd.array): default None : numpy matrix containing pretrained word vectors
-            update_embedding (boolean) : default True : train (True) or freeze(False) the embedding layer
-
+        Pooled word embeddings followed by an MLP, padding positions are ignored by the pooling.
+        :param num_classes: number of classes.
+        :param vocabulary_size: number of items in the vocabulary.
+        :param embedding_size: size of the embeddings.
+        :param embedding_mode: "avg", "max" or "concat" (avg and max pooling concatenated).
+        :param fc_hidden_sizes: size of each hidden layer.
+        :param fc_activation_functions: activation of each hidden layer.
+        :param fc_dropouts: dropout rate after each hidden layer, None or 0 for no dropout.
+        :param padding_idx: padding token id, its embedding is kept at zero.
+        :param pretrained_vec: optional numpy matrix of shape (vocabulary_size, embedding_size).
+        :param update_embedding: train (True) or freeze (False) the embedding layer.
+        :param apply_sm: return log probabilities (for NLLLoss) instead of raw scores.
+            Must be False for losses expecting raw scores, e.g. CrossEntropyLoss or ModifiedHuberLoss.
         """
         super(MLP, self).__init__()
 
+        if embedding_mode not in ("avg", "max", "concat"):
+            raise ValueError(f"Unknown embedding_mode: {embedding_mode}")
+        if not len(fc_hidden_sizes) == len(fc_activation_functions) == len(fc_dropouts):
+            raise ValueError("fc_hidden_sizes, fc_activation_functions and fc_dropouts must have the same length")
+
         self.embedding_mode = embedding_mode
-        self.hidden_sizes = fc_hidden_sizes
+        self.padding_idx = padding_idx
+        self.apply_sm = apply_sm
         self.pretrained_vec = pretrained_vec
         self.embedding = nn.Embedding(
             num_embeddings=vocabulary_size,
             embedding_dim=embedding_size,
             padding_idx=padding_idx,
         )
-        self.apply_sm = apply_sm
-        if self.pretrained_vec is not None:
-            self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
-        else:
-            init.xavier_uniform_(self.embedding.weight)
-        self.embedding.weight.requires_grad = update_embedding
+        with torch.no_grad():
+            if self.pretrained_vec is not None:
+                pretrained = torch.as_tensor(self.pretrained_vec, dtype=self.embedding.weight.dtype)
+                if tuple(pretrained.shape) != (vocabulary_size, embedding_size):
+                    raise ValueError(
+                        f"pretrained_vec must have shape {(vocabulary_size, embedding_size)}, "
+                        f"got {tuple(pretrained.shape)}"
+                    )
+                self.embedding.weight.copy_(pretrained)
+            else:
+                init.xavier_uniform_(self.embedding.weight)
+            # The init above overwrites the zero padding row set by nn.Embedding
+            if padding_idx is not None:
+                self.embedding.weight[padding_idx].zero_()
+        self.embedding.weight.requires_grad_(update_embedding)
 
-        if self.embedding_mode == "concat":
-            in_size = embedding_size * 2
-        else:
-            in_size = embedding_size
+        in_size = embedding_size * 2 if self.embedding_mode == "concat" else embedding_size
 
         # Dynamic setup of MLP given the input parameters
-        self.hidden_sizes = [in_size] + self.hidden_sizes + [num_classes]
+        self.hidden_sizes = [in_size, *fc_hidden_sizes, num_classes]
         modules = []
-        for i in range(len(self.hidden_sizes)-1):
-            modules.append(nn.Linear(in_features=self.hidden_sizes[i], out_features=self.hidden_sizes[i + 1]))
-            if i < len(self.hidden_sizes)-2:
-                modules.append(get_activation_func(fc_activation_functions[i]))
-                if fc_dropouts[i] is not None:
-                    if fc_dropouts[i] > 0.0:
-                        modules.append(torch.nn.Dropout(p=fc_dropouts[i]))
+        for size_in, size_out, activation, dropout in zip(
+            self.hidden_sizes[:-2], self.hidden_sizes[1:-1], fc_activation_functions, fc_dropouts
+        ):
+            modules.append(nn.Linear(in_features=size_in, out_features=size_out))
+            activation_func = get_activation_func(activation)
+            if activation_func is not None:
+                modules.append(activation_func)
+            if dropout is not None and dropout > 0.0:
+                modules.append(nn.Dropout(p=dropout))
+        modules.append(nn.Linear(in_features=self.hidden_sizes[-2], out_features=num_classes))
         self.module_list = nn.ModuleList(modules)
+
+    @staticmethod
+    def _avg_pool(x_embedding: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        # Mean over real tokens only, so that the padding length does not scale the representation
+        mask = mask.unsqueeze(2).to(x_embedding.dtype)
+        return (x_embedding * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1.0)
+
+    @staticmethod
+    def _max_pool(x_embedding: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        # Padding set to -inf so that a zero padding vector never wins over negative values
+        pooled = x_embedding.masked_fill(~mask.unsqueeze(2), float("-inf")).max(dim=1).values
+        # Fully padded sequences → zero vector instead of -inf
+        return pooled.masked_fill(~mask.any(dim=1, keepdim=True), 0.0)
 
     def forward(self, x):
         x_embedding = self.embedding(x)
+        if self.padding_idx is None:
+            mask = torch.ones_like(x, dtype=torch.bool)
+        else:
+            mask = x != self.padding_idx
+
         # Pooling over the embedding
         if self.embedding_mode == "avg":
-            # apply global average pooling only
-            x_embedding = x_embedding.mean(dim=1)
+            x = self._avg_pool(x_embedding, mask)
         elif self.embedding_mode == "max":
-            # apply global max pooling only
-            x_embedding, _ = torch.max(x_embedding, dim=1)
-        elif self.embedding_mode == "concat":
-            # apply global average pooling
-            x1 = x_embedding.mean(dim=1)
-            # apply global max pooling
-            x2, _ = torch.max(x_embedding, dim=1)
-            # concat average & max pooling
-            x_embedding = torch.cat((x1, x2), dim=1)
+            x = self._max_pool(x_embedding, mask)
         else:
-            raise ValueError(f"Unknown embedding_mode: {self.embedding_mode}")
+            x = torch.cat((self._avg_pool(x_embedding, mask), self._max_pool(x_embedding, mask)), dim=1)
 
         # Apply each module of the MLP Layer setup
-        x = x_embedding
         for m in self.module_list:
             x = m(x)
 
         if self.apply_sm:
-            out = F.log_softmax(x, dim=1)
-            return out
-        else:
-            return x
-
-
-
-
-
+            return F.log_softmax(x, dim=1)
+        return x
