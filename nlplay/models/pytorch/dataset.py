@@ -12,10 +12,42 @@ from scipy.sparse import coo_matrix, csr_matrix
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from keras_preprocessing.text import Tokenizer
-from keras_preprocessing import sequence, text
+from keras_preprocessing import text
 from nlplay.features.text_vectorizer import DataVectorizer
 from nlplay.utils.parlib import parallelApply
 from nlplay.utils.utils import get_elapsed_time
+
+
+def pad_sequences(sequences, maxlen: int | None = None, padding: str = "pre", truncating: str = "pre",
+                  value: int = 0, dtype="int32") -> np.ndarray:
+    """
+    Pad or truncate sequences of token ids to the same length, same defaults as keras pad_sequences,
+    whose keras_preprocessing version fails with numpy 2.
+    :param sequences: list of token id sequences.
+    :param maxlen: output length, the longest sequence length if None.
+    :param padding: "pre" (left) or "post" (right) padding.
+    :param truncating: "pre" keeps the end of longer sequences, "post" keeps their beginning.
+    :param value: padding value.
+    :param dtype: output dtype.
+    :returns: array of shape (n_sequences, maxlen).
+    """
+    if padding not in ("pre", "post") or truncating not in ("pre", "post"):
+        raise ValueError("padding and truncating must be 'pre' or 'post'")
+    if maxlen is None:
+        maxlen = max((len(seq) for seq in sequences), default=0)
+    out = np.full((len(sequences), maxlen), value, dtype=dtype)
+    if maxlen == 0:
+        return out
+    for i, seq in enumerate(sequences):
+        seq = list(seq)
+        seq = seq[-maxlen:] if truncating == "pre" else seq[:maxlen]
+        if not seq:
+            continue
+        if padding == "post":
+            out[i, : len(seq)] = seq
+        else:
+            out[i, -len(seq):] = seq
+    return out
 
 
 class CSRDataset(Dataset):
@@ -622,7 +654,7 @@ class NNDatasetGenerator(object):
             # Augmenting input tokens with n-grams features
             self.X_train = self.add_ngram(self.X_train, token_indice, ngram_range[1])
 
-        self.X_train = sequence.pad_sequences(self.X_train, maxlen=ds_max_seq)
+        self.X_train = pad_sequences(self.X_train, maxlen=ds_max_seq)
         self.y_train = y
 
         self.vocab_size = max_features
@@ -663,7 +695,7 @@ class NNDatasetGenerator(object):
             self.X_test = self.tokenizer.texts_to_sequences(X)
             if ngram_range[1] > 1:
                 self.X_test = self.add_ngram(self.X_test, token_indice, ngram_range[1])
-            self.X_test = sequence.pad_sequences(self.X_train, maxlen=ds_max_seq)
+            self.X_test = pad_sequences(self.X_test, maxlen=ds_max_seq)
             self.y_test = y
             del X, y
             gc.collect()
@@ -687,7 +719,7 @@ class NNDatasetGenerator(object):
             self.X_val = self.tokenizer.texts_to_sequences(X)
             if ngram_range[1] > 1:
                 self.X_val = self.add_ngram(self.X_val, token_indice, ngram_range[1])
-            self.X_val = sequence.pad_sequences(self.X_val, maxlen=ds_max_seq)
+            self.X_val = pad_sequences(self.X_val, maxlen=ds_max_seq)
             self.y_val = y
             del X, y
             gc.collect()
@@ -896,7 +928,7 @@ class DSGenerator(object):
 
         # Input features features
         X = self.vectorizer.fit_transform(X)
-        self.X_train = sequence.pad_sequences(X, maxlen=ds_max_seq, padding="post")
+        self.X_train = pad_sequences(X, maxlen=ds_max_seq, padding="post")
         self.y_train = y
         del X, y
         gc.collect()
@@ -921,7 +953,7 @@ class DSGenerator(object):
             del df
 
             X = self.vectorizer.transform(X)
-            self.X_test = sequence.pad_sequences(X, maxlen=ds_max_seq)
+            self.X_test = pad_sequences(X, maxlen=ds_max_seq, padding="post")
             self.y_test = y
             del X, y
             gc.collect()
@@ -942,7 +974,7 @@ class DSGenerator(object):
                 y_val = df[df.columns[self.label_col_idx]].to_numpy(dtype=int)
                 del df
             X_val = self.vectorizer.transform(X_val)
-            self.X_val = sequence.pad_sequences(X_val, maxlen=ds_max_seq)
+            self.X_val = pad_sequences(X_val, maxlen=ds_max_seq, padding="post")
             self.y_val = y_val
             del X_val, y_val
             gc.collect()
