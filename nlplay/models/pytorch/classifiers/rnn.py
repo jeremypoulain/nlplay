@@ -7,15 +7,16 @@ Title    : Neural architectures for named entity recognition - 2016 (BiLSTM)
 Authors  : Guillaume Lample, Miguel Ballesteros, Sandeep Subramanian, Kazuya Kawakami, Chris Dyer
 Papers   : https://arxiv.org/abs/1603.01360
 
-Title    : Neural Machine Translation by Jointly Learning to Align and Translate - 2014 (GRU)
-Authors  : Dzmitry Bahdanau, Kyunghyun Cho, Yoshua Bengio
-Papers   : https://arxiv.org/abs/1409.0473
+Title    : Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation - 2014 (GRU)
+Authors  : Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk,
+           Yoshua Bengio
+Papers   : https://arxiv.org/abs/1406.1078
 """
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn import init
-from nlplay.models.pytorch.utils import reset_padding_embedding
+from nlplay.models.pytorch.utils import padding_mask, reset_padding_embedding, run_packed_rnn
 
 
 class RNN(nn.Module):
@@ -96,12 +97,9 @@ class RNN(nn.Module):
     def forward(self, x):
         embeddings = self.embedding(x)
 
-        # https://pytorch.org/docs/stable/nn.html#torch.nn.LSTM
+        # Packed sequences, so that the final states are the ones of the last real tokens
         # If (h_0, c_0) is not provided, both h_0 and c_0 default to zero
-        if self.rnn_type == "gru":
-            output, h_n = self.rnn_encoder(embeddings)
-        else:
-            output, (h_n, c_n) = self.rnn_encoder(embeddings)
+        _, h_n, _ = run_packed_rnn(self.rnn_encoder, embeddings, padding_mask(x, self.embedding.padding_idx))
 
         # Take the output of last RNN hidden layer(s)
         if self.bidirectional:

@@ -8,7 +8,13 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn import init
-from nlplay.models.pytorch.utils import get_activation_func, masked_max, padding_mask, reset_padding_embedding
+from nlplay.models.pytorch.utils import (
+    get_activation_func,
+    masked_max,
+    padding_mask,
+    reset_padding_embedding,
+    run_packed_rnn,
+)
 
 
 class TextRCNN(nn.Module):
@@ -81,17 +87,18 @@ class TextRCNN(nn.Module):
     def forward(self, x):
 
         embeddings = self.embedding(x)
+        mask = padding_mask(x, self.embedding.padding_idx)
 
-        if self.rnn_type == "gru":
-            rnn_output, h_n = self.rnn_encoder(embeddings)
-        else:
-            rnn_output, (h_n, c_n) = self.rnn_encoder(embeddings)
+        # Packed sequences, padding never enters the recurrence, outputs are aligned to the front
+        rnn_output, _, aligned_mask = run_packed_rnn(self.rnn_encoder, embeddings, mask)
+        order = torch.argsort((~mask).to(torch.int8), dim=1, stable=True)
+        embeddings = embeddings.gather(1, order.unsqueeze(2).expand_as(embeddings))
 
         output = torch.cat([rnn_output, embeddings], dim=2)
         output = self.activation(self.fc1(output))
 
         # max pooling over time, padding positions excluded
-        output = masked_max(output, padding_mask(x, self.embedding.padding_idx))
+        output = masked_max(output, aligned_mask)
         output = self.dropout(output)
         output = self.fc2(output)
 

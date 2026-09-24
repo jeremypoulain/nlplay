@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn import init
-from nlplay.models.pytorch.utils import masked_max, masked_mean, padding_mask, reset_padding_embedding
+from nlplay.models.pytorch.utils import masked_max, masked_mean, padding_mask, reset_padding_embedding, run_packed_rnn
 
 
 class CustomRNN(nn.Module):
@@ -81,7 +81,8 @@ class CustomRNN(nn.Module):
         )
         x = x.permute(0, 2, 1)  # back to [batch, time, channels]
 
-        x, _ = self.rnn_encoder(x)
+        # Packed sequences, padding never enters the recurrence, outputs are aligned to the front
+        x, _, mask = run_packed_rnn(self.rnn_encoder, x, mask)
 
         # apply average and max pooling on rnn output, padding positions excluded
         avg_pool = masked_mean(x, mask)

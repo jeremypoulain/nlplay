@@ -114,6 +114,33 @@ def masked_max(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     return pooled.masked_fill(~mask.any(dim=1, keepdim=True), 0.0)
 
 
+def run_packed_rnn(rnn: nn.RNNBase, inputs: torch.Tensor, mask: torch.Tensor):
+    """
+    Run a batch first RNN over the real tokens only, whatever the padding side (pre, post or mixed).
+    The real tokens of each sequence are moved to the front, in order, then packed so that padding
+    never reaches the recurrence nor the final states.
+    :param rnn: batch first nn.RNN, nn.GRU or nn.LSTM.
+    :param inputs: inputs of shape (batch, seq_len, input_size).
+    :param mask: boolean mask of shape (batch, seq_len), True for real tokens.
+    :returns: (outputs of shape (batch, seq_len, hidden * directions) aligned to the front, final hidden
+        states h_n of shape (layers * directions, batch, hidden), mask of the aligned outputs).
+    """
+    seq_len = inputs.size(1)
+    lengths = mask.sum(dim=1)
+    order = torch.argsort((~mask).to(torch.int8), dim=1, stable=True)
+    aligned = inputs.gather(1, order.unsqueeze(2).expand_as(inputs))
+    # Fully padded sequences are run over one padding step, their outputs are masked
+    packed = nn.utils.rnn.pack_padded_sequence(
+        aligned, lengths.clamp(min=1).cpu(), batch_first=True, enforce_sorted=False
+    )
+    packed_out, h_n = rnn(packed)
+    if isinstance(h_n, tuple):
+        h_n = h_n[0]
+    outputs, _ = nn.utils.rnn.pad_packed_sequence(packed_out, batch_first=True, total_length=seq_len)
+    aligned_mask = torch.arange(seq_len, device=mask.device).unsqueeze(0) < lengths.unsqueeze(1)
+    return outputs, h_n, aligned_mask
+
+
 def masked_softmax(vector, mask, dim=-1, memory_efficient=False, mask_fill_value=-1e32):
     """
     Title    : A masked softmax module to correctly implement attention in Pytorch.
