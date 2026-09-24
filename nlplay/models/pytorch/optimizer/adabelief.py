@@ -182,25 +182,21 @@ class AdaBelief(Optimizer):
                         p.data.mul_(1.0 - group["weight_decay"])
                 else:
                     if group["weight_decay"] != 0:
-                        grad.add_(group["weight_decay"], p.data)
+                        grad.add_(p.data, alpha=group["weight_decay"])
 
                 # Update first and second moment running average
-                exp_avg.mul_(beta1).add_(1 - beta1, grad)
+                exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)
                 grad_residual = grad - exp_avg
-                exp_avg_var.mul_(beta2).addcmul_(
-                    1 - beta2, grad_residual, grad_residual
-                )
+                exp_avg_var.mul_(beta2).addcmul_(grad_residual, grad_residual, value=1 - beta2)
 
                 if amsgrad:
                     max_exp_avg_var = state["max_exp_avg_var"]
-                    # Maintains the maximum of all 2nd moment running avg. till now
-                    torch.max(max_exp_avg_var, exp_avg_var, out=max_exp_avg_var)
+                    # Maintains the maximum of all 2nd moment running avg. till now, eps added before the max
+                    # as in the official implementation (it accumulated in the max buffer at every step)
+                    torch.max(max_exp_avg_var, exp_avg_var.add_(group["eps"]), out=max_exp_avg_var)
 
                     # Use the max. for normalizing running avg. of gradient
-                    denom = (
-                        max_exp_avg_var.add_(group["eps"]).sqrt()
-                        / math.sqrt(bias_correction2)
-                    ).add_(group["eps"])
+                    denom = (max_exp_avg_var.sqrt() / math.sqrt(bias_correction2)).add_(group["eps"])
                 else:
                     denom = (
                         exp_avg_var.add_(group["eps"]).sqrt()
@@ -210,7 +206,7 @@ class AdaBelief(Optimizer):
                 if not self.rectify:
                     # Default update
                     step_size = group["lr"] / bias_correction1
-                    p.data.addcdiv_(-step_size, exp_avg, denom)
+                    p.data.addcdiv_(exp_avg, denom, value=-step_size)
 
                 else:  # Rectified update
                     # calculate rho_t
@@ -234,9 +230,9 @@ class AdaBelief(Optimizer):
 
                         step_size = rt * group["lr"] / bias_correction1
 
-                        p.data.addcdiv_(-step_size, exp_avg, denom)
+                        p.data.addcdiv_(exp_avg, denom, value=-step_size)
 
                     else:  # perform SGD style update
-                        p.data.add_(-group["lr"], exp_avg)
+                        p.data.add_(exp_avg, alpha=-group["lr"])
 
         return loss
