@@ -31,7 +31,8 @@ class SWEM(nn.Module):
             num_classes (int) : number of classes
             vocabulary_size (int): number of items in the vocabulary
             embedding_size (int): size of the embeddings
-            swem_mode (str):
+            swem_mode (str): "avg", "max", "concat" or "hier"
+            swem_window (int): window size of the "hier" mode local average pooling
             activation_function (str)
             drop_out (float) : default 0.2; drop out rate applied to the embedding layer
             padding_idx (int): default 0; Embedding will not use this index
@@ -57,16 +58,12 @@ class SWEM(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
-        if update_embedding:
-            self.embedding.weight.requires_grad = update_embedding
+        self.embedding.weight.requires_grad = update_embedding
 
         if self.swem_mode == "concat":
             in_size = embedding_size * 2
         else:
             in_size = embedding_size
-
-        # TODO : the AdaptiveAvgPool1d only allows to use a swem_window=2 aka bigram
-        self.hier_pool = nn.AdaptiveAvgPool1d(self.embedding_size)
 
         self.fc1 = nn.Linear(in_size, hidden_size)
         self.activation = get_activation_func(activation_function.lower())
@@ -92,14 +89,16 @@ class SWEM(nn.Module):
             x_embedding = torch.cat((x1, x2), dim=1)
 
         elif self.swem_mode == "hier":
-            # Rearrange the embedding shape to perform the AdaptiveAvgPool1d
-            x_embedding = x_embedding.permute(0, 2, 1)
-            x_embedding = self.hier_pool(x_embedding).permute(0, 2, 1)
+            # Average pooling over each local window of swem_window words
+            x_embedding = F.avg_pool1d(x_embedding.permute(0, 2, 1), kernel_size=self.swem_window, stride=1)
             # Apply global max-pooling operation on top of the representations for every window
-            x_embedding, _ = torch.max(x_embedding, dim=1)
+            x_embedding, _ = torch.max(x_embedding, dim=2)
+
+        else:
+            raise ValueError(f"Unknown swem_mode: {self.swem_mode}")
 
         if self.drop_out > 0.0:
-            x_embedding = F.dropout(x_embedding, self.drop_out)
+            x_embedding = F.dropout(x_embedding, self.drop_out, training=self.training)
 
         h_layer = self.fc1(x_embedding)
         h_layer = self.activation(h_layer)

@@ -1,7 +1,7 @@
 """
 Title    : Convolutional Neural Networks for Sentence Classification - 2014
 Authors  : Yoon Kim
-Papers   : https://arxiv.org/abs/1607.01759
+Papers   : https://arxiv.org/abs/1408.5882
 Source   : https://github.com/galsang/CNN-sentence-classification-pytorch
 """
 import torch
@@ -79,10 +79,11 @@ class TextCNN(nn.Module):
         return getattr(self, f"conv_{i}")
 
     def forward(self, x):
-        x = self.embedding(x).view(-1, 1, self.embedding_dim * self.max_sent_len)
+        emb = self.embedding(x).view(-1, 1, self.embedding_dim * self.max_sent_len)
         if self.model_type == "multichannel":
-            x2 = self.embedding2(x).view(-1, 1, self.embedding_dim * self.max_sent_len)
-            x = torch.cat((x, x2), 1)
+            emb2 = self.embedding2(x).view(-1, 1, self.embedding_dim * self.max_sent_len)
+            emb = torch.cat((emb, emb2), 1)
+        x = emb
 
         conv_results = [
             F.max_pool1d(

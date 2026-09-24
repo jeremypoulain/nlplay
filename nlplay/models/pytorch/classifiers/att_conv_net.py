@@ -33,6 +33,9 @@ class AttentiveConvNet(nn.Module):
         apply_sm: bool = True,
         device: str = "cuda",
     ):
+        """
+        :param device: unused, kept for backward compatibility, weights follow the module device.
+        """
         super().__init__()
 
         self.hidden_size = hidden_size
@@ -57,8 +60,7 @@ class AttentiveConvNet(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
-        if update_embedding:
-            self.embedding.weight.requires_grad = update_embedding
+        self.embedding.weight.requires_grad = update_embedding
 
         if self.attentive_conv_net_type == "ADVANCED":
             self.attention_dim *= 2
@@ -77,18 +79,18 @@ class AttentiveConvNet(nn.Module):
         if self.attention_type == "DOT":
             self.dot_product_attention = DotProductAttention(1.0)
         elif self.attention_type == "BILINEAR":
-            self.bilinear_matrix = init_tensor(
-                torch.empty(self.attention_dim, self.attention_dim)
-            ).to(device)
+            self.bilinear_matrix = nn.Parameter(
+                init_tensor(torch.empty(self.attention_dim, self.attention_dim))
+            )
             self.dot_product_attention = DotProductAttention(1.0)
         elif self.attention_type == "ADDITIVE_PROJECTION":
             self.additive_projection = AdditiveAttention2D(self.attention_dim)
         else:
             raise TypeError("Unsupported AttentionType: %s." % self.attention_type)
 
-        self.attentive_conv = init_tensor(
-            torch.empty(self.attention_dim, self.embedding_dim)
-        ).to(device)
+        self.attentive_conv = nn.Parameter(
+            init_tensor(torch.empty(self.attention_dim, self.embedding_dim))
+        )
         self.x_conv = torch.nn.Sequential(
             torch.nn.Conv1d(
                 self.embedding_dim,
@@ -98,13 +100,13 @@ class AttentiveConvNet(nn.Module):
             ),
             torch.nn.Tanh(),
         )
-        self.bias = torch.zeros([self.embedding_dim]).to(device)
-        self.hidden1_matrix = init_tensor(
-            torch.empty(self.embedding_dim, self.hidden_size)
-        ).to(device)
-        self.hidden2_matrix = init_tensor(
-            torch.empty(self.hidden_size, self.hidden_size)
-        ).to(device)
+        self.bias = nn.Parameter(torch.zeros([self.embedding_dim]))
+        self.hidden1_matrix = nn.Parameter(
+            init_tensor(torch.empty(self.embedding_dim, self.hidden_size))
+        )
+        self.hidden2_matrix = nn.Parameter(
+            init_tensor(torch.empty(self.hidden_size, self.hidden_size))
+        )
 
         self.dropout = torch.nn.Dropout(dropout)
         self.fc1 = torch.nn.Linear(
@@ -176,12 +178,12 @@ class AttentiveConvNet(nn.Module):
         )
         hidden = torch.nn.functional.max_pool1d(
             attentive_convolution, kernel_size=attentive_convolution.size()[-1]
-        ).squeeze()
+        ).squeeze(2)
         hidden1 = hidden.matmul(self.hidden1_matrix)
         hidden2 = hidden1.matmul(self.hidden2_matrix)
         hidden_layer = torch.cat([hidden, hidden1, hidden2], 1)
 
-        out = self.dropout(self.fc1(hidden_layer))
+        out = self.fc1(self.dropout(hidden_layer))
 
         if self.apply_sm:
             out = F.log_softmax(out, dim=1)

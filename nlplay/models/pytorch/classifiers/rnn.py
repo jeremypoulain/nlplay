@@ -29,7 +29,7 @@ class RNN(nn.Module):
         bidirectional: bool = False,
         dropout: float = 0.2,
         pretrained_vec=None,
-        update_embedding: bool = False,
+        update_embedding: bool = True,
         padding_idx: int = 0,
         apply_sm: bool = True
     ):
@@ -43,7 +43,7 @@ class RNN(nn.Module):
             bidirectional: (bool) :
             dropout (float) : default 0.2; drop out rate applied to the embedding layer
             pretrained_vec (nd.array): default None : numpy matrix containing pretrained word vectors
-            update_embedding: bool = True, (boolean) : default False : option to freeze/don't train embedding layer
+            update_embedding (boolean) : default True : train (True) or freeze (False) the embedding layer
             padding_idx (int): default 0; Embedding will not use this index
         """
         super().__init__()
@@ -64,8 +64,7 @@ class RNN(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
-        if update_embedding:
-            self.embedding.weight.requires_grad = update_embedding
+        self.embedding.weight.requires_grad = update_embedding
 
         if bidirectional:
             h_size = hidden_size * 2
@@ -112,7 +111,7 @@ class RNN(nn.Module):
 
         # Apply dropout regularization
         if self.dropout > 0.0:
-            out = F.dropout(out, p=self.dropout)
+            out = F.dropout(out, p=self.dropout, training=self.training)
 
         out = self.fc1(out)
         if self.apply_sm:

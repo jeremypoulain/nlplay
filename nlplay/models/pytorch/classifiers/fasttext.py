@@ -43,8 +43,7 @@ class PytorchFastText(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
-        if update_embedding:
-            self.embedding.weight.requires_grad = update_embedding
+        self.embedding.weight.requires_grad = update_embedding
 
         self.fc1 = nn.Linear(embedding_size, out_features=num_classes)
 
@@ -53,7 +52,7 @@ class PytorchFastText(nn.Module):
         x_embedding = self.embedding(x).mean(dim=1)
 
         if self.drop_out > 0.0:
-            x_embedding = F.dropout(x_embedding, self.drop_out)
+            x_embedding = F.dropout(x_embedding, self.drop_out, training=self.training)
 
         out = self.fc1(x_embedding)
         if self.apply_sm:

@@ -18,7 +18,7 @@ class SMLinearModel(nn.Module):
 
     def forward(self, x):
         if self.drop_out > 0.0:
-            x = F.dropout(x, self.drop_out)
+            x = F.dropout(x, self.drop_out, training=self.training)
         out = self.fc1(x)
         if self.apply_sm:
             out = F.log_softmax(out, dim=1)

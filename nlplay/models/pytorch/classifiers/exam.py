@@ -33,7 +33,8 @@ class EXAM(nn.Module):
             padding_idx (int): default 0; Embedding will not use this index
             drop_out (float) : default 0.2; drop out rate applied to the embedding layer
             pretrained_vec (nd.array): default None : numpy matrix containing pretrained word vectors
-            update_embedding: bool (boolean) : default True : option to train/freeze embedding layer weights
+            update_embedding: bool (boolean) : default True : option to train/freeze the word embedding layer
+            device (str) : unused, kept for backward compatibility, the input device is used
         """
         super(EXAM, self).__init__()
         self.num_classes = num_classes
@@ -43,6 +44,7 @@ class EXAM(nn.Module):
         self.embedding_size = embedding_size
         self.drop_out = drop_out
         self.pretrained_vec = pretrained_vec
+        self.padding_idx = padding_idx
         self.device = torch.device(device)
         self.apply_sm = apply_sm
 
@@ -59,7 +61,6 @@ class EXAM(nn.Module):
         )
 
         self.activation = get_activation_func(activation_function.lower())
-        self.max_pool_1d = nn.AdaptiveAvgPool1d(output_size=1)
 
         # EXAM adds 2 extra linear layers (dense1/dense2) on top of the default region embedding models
         self.dense0 = nn.Linear(self.embedding_size, num_classes)
@@ -68,36 +69,23 @@ class EXAM(nn.Module):
         )
         self.dense2 = nn.Linear(self.max_sent_len * 2, 1)
 
+        # Pretrained vectors are word embeddings (embedding_size), the context units stay random
+        init.xavier_uniform_(self.embedding.weight)
         if self.pretrained_vec is not None:
-            self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
-        else:
-            init.xavier_uniform_(self.embedding.weight)
-        if update_embedding:
-            self.embedding.weight.requires_grad = update_embedding
+            self.embedding_region.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
+        self.embedding_region.weight.requires_grad = update_embedding
 
     def forward(self, x):
         # Retrieve batch size as extra parameter for data preparation
         batch_size = x.shape[0]
 
         # Batch data preparation for region embedding - Qiao et al. (2018) - https://openreview.net/pdf?id=BkSDMA36Z
-        aligned_seq = torch.zeros(
-            (self.max_sent_len - 2 * self.region_radius, batch_size, self.region_size),
-            dtype=torch.int64,
-            device=self.device,
-        )
-        for i in range(self.region_radius, self.max_sent_len - self.region_radius):
-            aligned_seq[i - self.region_radius] = x[
-                :, i - self.region_radius : i - self.region_radius + self.region_size
-            ]
+        # region_aligned_seq : (batch, n_regions, region_size) word ids of each region
+        region_aligned_seq = x[:, : self.max_sent_len].unfold(1, self.region_size, 1)
         trimed_seq = x[:, self.region_radius : self.max_sent_len - self.region_radius]
-        mask = torch.repeat_interleave(
-            (trimed_seq > 0).type(torch.uint8).reshape((batch_size, -1, 1)),
-            repeats=self.embedding_size,
-            dim=2,
-        )
+        mask = (trimed_seq != self.padding_idx).unsqueeze(2)
 
         # Region embedding setup
-        region_aligned_seq = aligned_seq.transpose(1, 0)
         region_aligned_emb = self.embedding_region(region_aligned_seq).reshape(
             (batch_size, -1, self.region_size, self.embedding_size)
         )
@@ -106,9 +94,8 @@ class EXAM(nn.Module):
         )
         projected_emb = region_aligned_emb * context_unit
 
-        feature = self.max_pool_1d(
-            projected_emb.transpose(3, 2).reshape((batch_size, -1, self.region_size))
-        ).reshape((batch_size, -1, self.embedding_size))
+        # Max pooling over each region, as in Qiao et al. (2018)
+        feature = projected_emb.max(dim=2).values
         feature = feature * mask
 
         # Exam - Feature interaction with classes

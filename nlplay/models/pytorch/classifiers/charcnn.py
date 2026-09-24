@@ -65,32 +65,32 @@ class CharCNN_Zhang(nn.Module):
             nn.MaxPool1d(kernel_size=3),
         )
 
-        # Definition of the output dimension of conv6 layer
-        # As per paper => l6 = (l0 − 96) / 27
-        conv_dim = (max_seq_len - 96) / 27
-        conv_dim = int(conv_dim * out_channels)
+        # Output dimension of conv6 layer, the paper formula l6 = (l0 - 96) / 27 is only exact
+        # when the pooled lengths divide evenly, so it is measured on a dummy input instead
+        with torch.no_grad():
+            conv_dim = self._conv_features(torch.zeros(1, vocabulary_size, max_seq_len)).size(1)
 
         # Definition of the 3 Fully-connected layers
-        self.fc1 = nn.Sequential(nn.Linear(conv_dim, linear_out_dim), nn.Dropout(dropout))
-        self.fc2 = nn.Sequential(nn.Linear(linear_out_dim, linear_out_dim), nn.Dropout(dropout))
+        self.fc1 = nn.Sequential(nn.Linear(conv_dim, linear_out_dim), nn.ReLU(), nn.Dropout(dropout))
+        self.fc2 = nn.Sequential(nn.Linear(linear_out_dim, linear_out_dim), nn.ReLU(), nn.Dropout(dropout))
         self.fc3 = nn.Linear(linear_out_dim, num_classes)
 
-    def forward(self, x):
-
-        # get a tensor in the form of [Batch_size,Vocab_size,max_seq_len]
-        x = x.transpose(1, 2)
-
-        # forward pass - 6 Convolution layers
+    def _conv_features(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.conv4(x)
         x = self.conv5(x)
         x = self.conv6(x)
+        return x.flatten(1)
 
-        # forward pass - 3 Fully-connected layers
-        x = x.view(x.size(0), -1)
-        x = self.dropout_input(x)
+    def forward(self, x):
+
+        # get a tensor in the form of [Batch_size,Vocab_size,max_seq_len]
+        x = self.dropout_input(x.transpose(1, 2))
+
+        # forward pass - 6 Convolution layers, then 3 Fully-connected layers
+        x = self._conv_features(x)
         x = self.fc1(x)
         x = self.fc2(x)
         out = self.fc3(x)

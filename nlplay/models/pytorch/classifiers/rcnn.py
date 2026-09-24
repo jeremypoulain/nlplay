@@ -45,8 +45,7 @@ class TextRCNN(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
-        if update_embedding:
-            self.embedding.weight.requires_grad = update_embedding
+        self.embedding.weight.requires_grad = update_embedding
 
         if rnn_bidirectional:
             h_size = hidden_size * 2

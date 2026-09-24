@@ -6,7 +6,6 @@ Source   : https://github.com/dreamgonfly/deep-text-classification-pytorch
 """
 import torch
 from torch import nn
-from torch.autograd import Variable
 from torch.nn import functional as F
 
 
@@ -36,32 +35,29 @@ class QRNNLayer(nn.Module):
         )
         self.tanh = nn.Tanh()
         self.sigmoid = nn.Sigmoid()
-        self.dropout = nn.Dropout(p=zoneout)
 
     def forward(self, x):
 
-        zero_padding = Variable(
-            torch.zeros(x.size(0), self.input_size, self.kernel_size - 1),
-            requires_grad=False,
-        )
-        if x.is_cuda:
-            zero_padding = zero_padding.cuda()
-        x_padded = torch.cat([zero_padding, x], dim=2)
+        # Causal padding so that the convolution at step t only sees steps <= t
+        x_padded = F.pad(x, (self.kernel_size - 1, 0))
 
         z = self.tanh(self.conv_z(x_padded))
+        f = self.sigmoid(self.conv_f(x_padded))
         if self.zoneout > 0:
-            f = 1 - self.dropout(1 - self.sigmoid(self.conv_f(x_padded)))
-        else:
-            f = self.sigmoid(self.conv_f(x_padded))
+            # Zoneout F = 1 - dropout(1 - F) with an unscaled mask so that F stays in [0, 1],
+            # the expected update is used at inference
+            update = 1 - f
+            if self.training:
+                update = update * torch.bernoulli(torch.full_like(update, 1 - self.zoneout))
+            else:
+                update = update * (1 - self.zoneout)
+            f = 1 - update
         o = self.sigmoid(self.conv_o(x_padded))
         i = self.sigmoid(self.conv_i(x_padded))
 
         h_list, c_list = [], []
-        h_prev = Variable(torch.zeros(x.size(0), self.hidden_size), requires_grad=False)
-        c_prev = Variable(torch.zeros(x.size(0), self.hidden_size), requires_grad=False)
-        if x.is_cuda:
-            h_prev = h_prev.cuda()
-            c_prev = c_prev.cuda()
+        h_prev = x.new_zeros(x.size(0), self.hidden_size)
+        c_prev = x.new_zeros(x.size(0), self.hidden_size)
 
         for t in range(x.size(2)):
             z_t = z[:, :, t]
@@ -120,13 +116,13 @@ class QRNN(nn.Module):
             vocabulary_size, embedding_size, padding_idx=padding_idx
         )
         if pretrained_vec is not None:
-            self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
+            self.embedding.weight.data.copy_(torch.from_numpy(pretrained_vec))
         self.dropout = nn.Dropout(p=drop_out)
         self.dense = dense
 
         qrnn_layers = []
         input_size = embedding_size
-        for _ in range(num_layers - 1):
+        for _ in range(num_layers):
             qrnn_layers.append(
                 QRNNLayer(input_size, hidden_size, kernel_size, pooling, zoneout)
             )

@@ -96,9 +96,9 @@ class DPCNN(nn.Module):
             conv_features = self.convs[i](block_features)
             conv_features = conv_features + block_features
 
-        doc_embedding = F.max_pool1d(conv_features, conv_features.size(2)).squeeze()
+        doc_embedding = F.max_pool1d(conv_features, conv_features.size(2)).squeeze(2)
 
-        out = self.dropout(self.fc1(doc_embedding))
+        out = self.fc1(self.dropout(doc_embedding))
         if self.apply_sm:
             out = F.log_softmax(out, dim=1)
 

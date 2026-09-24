@@ -12,7 +12,7 @@ def set_seed(seed: int = 123):
 
 
 def get_activation_func(activation_func_name: str = "relu"):
-    if activation_func_name is "none":
+    if activation_func_name == "none":
         return None
     elif activation_func_name == "relu":
         return nn.ReLU()

@@ -28,6 +28,9 @@ class LEAM(nn.Module):
         apply_sm: bool = True,
         device: str = "cuda",
     ):
+        """
+        :param device: unused, kept for backward compatibility, the input device is used.
+        """
         super(LEAM, self).__init__()
 
         self.num_classes = num_classes
@@ -45,8 +48,7 @@ class LEAM(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
-        if update_embedding:
-            self.embedding.weight.requires_grad = update_embedding
+        self.embedding.weight.requires_grad = update_embedding
 
         self.embedding_class = nn.Embedding(num_classes, embedding_size)
         self.conv = torch.nn.Conv1d(
@@ -69,20 +71,12 @@ class LEAM(nn.Module):
         # w_emb : Token Embedding
         # cls_emb : class/label Embedding
         w_emb = self.embedding(x)
-        cls_emb = self.embedding_class(
-            torch.tensor(
-                [[i for i in range(self.num_classes)] for j in range(x.size(0))],
-                device=self.device,
-            )
-        )
+        class_ids = torch.arange(self.num_classes, device=x.device).expand(x.size(0), -1)
+        cls_emb = self.embedding_class(class_ids)
 
         # Joint Embeddings of Words and Labels via cosine similarity
-        w_emb_norm = torch.norm(w_emb, p=2, dim=2).detach()
-        w_emb_norm = w_emb.div(w_emb_norm.unsqueeze(2))
-        w_emb_norm = w_emb_norm.permute(0, 2, 1)
-
-        cls_emb_norm = torch.norm(cls_emb, p=2, dim=2).detach()
-        cls_emb_norm = cls_emb.div(cls_emb_norm.unsqueeze(2))
+        w_emb_norm = F.normalize(w_emb, p=2, dim=2).permute(0, 2, 1)
+        cls_emb_norm = F.normalize(cls_emb, p=2, dim=2)
 
         # beta : The compatibility / attention score for the entire text sequence
         g = torch.bmm(cls_emb_norm, w_emb_norm)
@@ -99,7 +93,7 @@ class LEAM(nn.Module):
             z = m(z)
 
         if self.apply_sm:
-            out = F.log_softmax(x, dim=1)
+            out = F.log_softmax(z, dim=1)
             return out
         else:
             return z

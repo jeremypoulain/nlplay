@@ -17,7 +17,7 @@ class CustomRNN(nn.Module):
         rnn_bidirectional: bool = False,
         dropout:float = 0.15,
         pretrained_vec=None,
-        update_embedding: bool = False,
+        update_embedding: bool = True,
         padding_idx: int = 0,
         apply_sm: bool = True,
     ):
@@ -40,8 +40,7 @@ class CustomRNN(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
-        if update_embedding:
-            self.embedding.weight.requires_grad = update_embedding
+        self.embedding.weight.requires_grad = update_embedding
 
         if self.rnn_type == "lstm":
             self.rnn_encoder = nn.LSTM(
@@ -89,7 +88,7 @@ class CustomRNN(nn.Module):
 
         # concatenate average and max pooling
         feats = torch.cat((avg_pool, max_pool), 1)
-        feats = F.dropout(feats, self.dropout)
+        feats = F.dropout(feats, self.dropout, training=self.training)
 
         # pass through the output layer and return the output
         out = self.fc1(feats)

@@ -36,8 +36,7 @@ class SRUClassifier(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
-        if update_embedding:
-            self.embedding.weight.requires_grad = update_embedding
+        self.embedding.weight.requires_grad = update_embedding
 
         self.encoder = SRU(
                 embedding_size,
@@ -45,15 +44,15 @@ class SRUClassifier(nn.Module):
                 num_layers,
                 dropout=dropout,
             )
-        self.fc1 = nn.Linear(embedding_size, num_classes)
+        self.fc1 = nn.Linear(hidden_size, num_classes)
 
     def forward(self, input):
         emb = self.embedding(input)
         emb = self.drop(emb)
 
-        # Apply SRU
-        output, hidden = self.encoder(emb)
-        # Take the output of last RNN layer
+        # Apply SRU, which expects (seq_len, batch, embedding_size) inputs
+        output, hidden = self.encoder(emb.transpose(0, 1))
+        # Take the output of the last timestep
         output = output[-1]
 
         output = self.drop(output)

@@ -47,8 +47,7 @@ class MLP(nn.Module):
             self.embedding.weight.data.copy_(torch.from_numpy(self.pretrained_vec))
         else:
             init.xavier_uniform_(self.embedding.weight)
-        if update_embedding:
-            self.embedding.weight.requires_grad = update_embedding
+        self.embedding.weight.requires_grad = update_embedding
 
         if self.embedding_mode == "concat":
             in_size = embedding_size * 2
@@ -83,6 +82,8 @@ class MLP(nn.Module):
             x2, _ = torch.max(x_embedding, dim=1)
             # concat average & max pooling
             x_embedding = torch.cat((x1, x2), dim=1)
+        else:
+            raise ValueError(f"Unknown embedding_mode: {self.embedding_mode}")
 
         # Apply each module of the MLP Layer setup
         x = x_embedding
