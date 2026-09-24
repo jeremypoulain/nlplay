@@ -1,7 +1,6 @@
-numpy=>1.17.4
+numpy>=1.17.4
 pandas
-python=>3.7
-pytorch
+torch>=2.0
 scikit-learn
 pyarrow>=0.15.1
 fasttext==0.9.2

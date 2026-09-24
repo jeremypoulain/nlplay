@@ -5,10 +5,10 @@ channels:
 - anaconda
 - pytorch
 dependencies:
-  - numpy=>1.17.4
+  - numpy>=1.17.4
   - pandas
-  - python=3.7
-  - pytorch
+  - python>=3.10
+  - pytorch>=2.0
   - scikit-learn
   - pyarrow>=0.15.1
   - pip:

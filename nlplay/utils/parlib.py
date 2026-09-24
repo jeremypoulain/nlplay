@@ -5,7 +5,11 @@ Pandas series, df (by row), and grouped df"""
 import numpy as np
 import pandas as pd
 from joblib import Parallel, cpu_count, delayed
-from pandas.api.typing import DataFrameGroupBy, SeriesGroupBy
+try:
+    from pandas.api.typing import DataFrameGroupBy, SeriesGroupBy
+except ImportError:
+    # pandas < 2.1
+    from pandas.core.groupby import DataFrameGroupBy, SeriesGroupBy
 
 
 def _n_jobs(numCores: int) -> int:
