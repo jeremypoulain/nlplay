@@ -30,7 +30,8 @@ class EXAM(nn.Module):
             vocabulary_size (int): number of items in the vocabulary
             embedding_size (int): size of the embeddings
             padding_idx (int): default 0; Embedding will not use this index
-            drop_out (float) : default 0.2; drop out rate applied to the embedding layer
+            max_sent_len (int): input length, shorter batches are padded and longer ones truncated
+            drop_out (float) : unused, kept for backward compatibility (the reference model has no dropout)
             pretrained_vec (nd.array): default None : numpy matrix containing pretrained word vectors
             update_embedding: bool (boolean) : default True : option to train/freeze the word embedding layer
             device (str) : unused, kept for backward compatibility, the input device is used
@@ -78,6 +79,10 @@ class EXAM(nn.Module):
     def forward(self, x):
         # Retrieve batch size as extra parameter for data preparation
         batch_size = x.shape[0]
+
+        # The aggregation layer (dense1) expects exactly max_sent_len positions
+        if x.size(1) < self.max_sent_len:
+            x = F.pad(x, (0, self.max_sent_len - x.size(1)), value=self.padding_idx or 0)
 
         # Batch data preparation for region embedding - Qiao et al. (2018) - https://openreview.net/pdf?id=BkSDMA36Z
         # region_aligned_seq : (batch, n_regions, region_size) word ids of each region
