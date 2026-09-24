@@ -30,6 +30,10 @@ The idea is to have a collection of ready to use algorithms & building blocks , 
                     [Neural architectures for named entity recognition - 2016](https://arxiv.org/pdf/1603.01360.pdf)
 -  **GRU/BiGRU**  : [Neural Machine Translation by Jointly Learning to Align and Translate - 2014](https://arxiv.org/pdf/1409.0473)
 
+## Sentence Embeddings (Sklearn & Pytorch)
+-  **SIF**  : [A Simple but Tough-to-Beat Baseline for Sentence Embeddings - 2017](https://openreview.net/forum?id=SyK00v5xx) - Source : [PrincetonML](https://github.com/PrincetonML/SIF)
+-  **uSIF** : [Unsupervised Random Walk Sentence Embeddings: A Strong but Simple Baseline - 2018](https://www.aclweb.org/anthology/W18-3012.pdf) - Source : [kawine](https://github.com/kawine/usif)
+
 ## Additional Pytorch Optimizers
 -  **AdaBelief** : [AdaBelief Optimizer: Adapting Stepsizes by the Belief in Observed Gradients - 2020](https://arxiv.org/pdf/2010.07468.pdf) - Source : [juntang-zhuang](https://github.com/juntang-zhuang/Adabelief-Optimizer)
 -  **AdaBound**  : [Adaptive Gradient Methods with Dynamic Bound of Learning Rate - 2019](https://arxiv.org/pdf/1902.09843) - Source : [Luolc](https://github.com/Luolc/AdaBound)
