@@ -88,16 +88,20 @@ class PytorchModelTrainer(object):
         set_seed(seed)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        # Datasets may define their own batching, e.g. per batch padding of variable length inputs
         self.train_dl = DataLoader(
-            self.train_ds, batch_size=self.batch_size, shuffle=True
+            self.train_ds, batch_size=self.batch_size, shuffle=True,
+            collate_fn=getattr(self.train_ds, "collate_fn", None),
         )
         if self.test_ds is not None:
             self.test_dl = DataLoader(
-                self.test_ds, batch_size=self.batch_size, shuffle=False
+                self.test_ds, batch_size=self.batch_size, shuffle=False,
+                collate_fn=getattr(self.test_ds, "collate_fn", None),
             )
         if self.val_ds is not None:
             self.val_dl = DataLoader(
-                self.val_ds, batch_size=self.batch_size, shuffle=False
+                self.val_ds, batch_size=self.batch_size, shuffle=False,
+                collate_fn=getattr(self.val_ds, "collate_fn", None),
             )
 
         self.model = self.model.to(device)
@@ -202,7 +206,8 @@ class PytorchModelTrainer(object):
                     )
                     losses = []
 
-            logging.info("   Info | " + get_gpu_info(device))
+            if device.type == "cuda":
+                logging.info("   Info | " + get_gpu_info(device))
 
             # End of epoch - Evaluate the model performance
             self.model.eval()
