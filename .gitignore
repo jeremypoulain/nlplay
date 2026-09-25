@@ -92,6 +92,7 @@ target/
 celerybeat-schedule
 
 # virtualenv
+.venv
 venv/
 ENV/
 
