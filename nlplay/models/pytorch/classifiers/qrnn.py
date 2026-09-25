@@ -11,10 +11,15 @@ from nlplay.models.pytorch.utils import reset_padding_embedding
 
 
 class QRNNLayer(nn.Module):
+    # Gates computed by the convolution for each pooling mode, z is the candidate
+    POOLING_GATES = {"f": 2, "fo": 3, "ifo": 4}
+
     def __init__(
         self, input_size, hidden_size, kernel_size=2, pooling="fo", zoneout=0.5
     ):
         super(QRNNLayer, self).__init__()
+        if pooling not in self.POOLING_GATES:
+            raise ValueError(f"pooling must be 'f', 'fo' or 'ifo', got {pooling!r}")
 
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -22,28 +27,36 @@ class QRNNLayer(nn.Module):
         self.pooling = pooling
         self.zoneout = zoneout
 
-        self.conv_z = nn.Conv1d(
-            in_channels=input_size, out_channels=hidden_size, kernel_size=kernel_size
-        )
-        self.conv_f = nn.Conv1d(
-            in_channels=input_size, out_channels=hidden_size, kernel_size=kernel_size
-        )
-        self.conv_o = nn.Conv1d(
-            in_channels=input_size, out_channels=hidden_size, kernel_size=kernel_size
-        )
-        self.conv_i = nn.Conv1d(
-            in_channels=input_size, out_channels=hidden_size, kernel_size=kernel_size
+        # One convolution for all the gates the pooling uses, same init as separate convolutions
+        self.conv = nn.Conv1d(
+            in_channels=input_size,
+            out_channels=hidden_size * self.POOLING_GATES[pooling],
+            kernel_size=kernel_size,
         )
         self.tanh = nn.Tanh()
         self.sigmoid = nn.Sigmoid()
+
+    def _load_from_state_dict(self, state_dict, prefix, *args, **kwargs):
+        # Checkpoints saved before the fusion hold one convolution per gate in z, f, o, i order
+        if prefix + "conv_z.weight" in state_dict:
+            gates = ["z", "f", "o", "i"][: self.POOLING_GATES[self.pooling]]
+            for name in ("weight", "bias"):
+                state_dict[prefix + "conv." + name] = torch.cat(
+                    [state_dict[f"{prefix}conv_{g}.{name}"] for g in gates]
+                )
+            for g in "zfoi":
+                for name in ("weight", "bias"):
+                    state_dict.pop(f"{prefix}conv_{g}.{name}", None)
+        super()._load_from_state_dict(state_dict, prefix, *args, **kwargs)
 
     def forward(self, x):
 
         # Causal padding so that the convolution at step t only sees steps <= t
         x_padded = F.pad(x, (self.kernel_size - 1, 0))
 
-        z = self.tanh(self.conv_z(x_padded))
-        f = self.sigmoid(self.conv_f(x_padded))
+        gates = self.conv(x_padded).chunk(self.POOLING_GATES[self.pooling], dim=1)
+        z = self.tanh(gates[0])
+        f = self.sigmoid(gates[1])
         if self.zoneout > 0:
             # Zoneout F = 1 - dropout(1 - F) with an unscaled mask so that F stays in [0, 1],
             # the expected update is used at inference
@@ -53,8 +66,8 @@ class QRNNLayer(nn.Module):
             else:
                 update = update * (1 - self.zoneout)
             f = 1 - update
-        o = self.sigmoid(self.conv_o(x_padded))
-        i = self.sigmoid(self.conv_i(x_padded))
+        o = self.sigmoid(gates[2]) if self.pooling != "f" else None
+        i = self.sigmoid(gates[3]) if self.pooling == "ifo" else None
 
         h_list, c_list = [], []
         h_prev = x.new_zeros(x.size(0), self.hidden_size)
@@ -63,8 +76,8 @@ class QRNNLayer(nn.Module):
         for t in range(x.size(2)):
             z_t = z[:, :, t]
             f_t = f[:, :, t]
-            o_t = o[:, :, t]
-            i_t = i[:, :, t]
+            o_t = o[:, :, t] if o is not None else None
+            i_t = i[:, :, t] if i is not None else None
             h_prev, c_prev = self.pool(h_prev, c_prev, z_t, f_t, o_t, i_t)
             h_list.append(h_prev)
             if c_prev is not None:
@@ -143,8 +156,6 @@ class QRNN(nn.Module):
             x = self.dropout(h)
             if self.dense:
                 x = torch.cat([x, residual], dim=1)
-            else:
-                x = x
 
         last_timestep = x[:, :, -1]
         out = self.linear(last_timestep)

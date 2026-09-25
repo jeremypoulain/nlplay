@@ -66,7 +66,8 @@ model = TextRCNN(
     rnn_bidirectional=bidirectional,
     rnn_dropout=rnn_dropout,
     drop_out=dropout,
-    update_embedding=update_embedding
+    update_embedding=update_embedding,
+    pretrained_vec=vecs,
 )
 
 criterion = nn.CrossEntropyLoss()

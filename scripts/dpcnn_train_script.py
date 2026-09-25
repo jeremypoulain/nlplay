@@ -36,7 +36,8 @@ train_ds, val_ds = ds.from_csv(train_file=train_csv, val_file=test_csv, ngram_ra
 vecs = get_pretrained_vecs(input_vec_file=pretrained_vec, target_vocab=ds.vocab,
                            dim=embedding_size, output_file=None)
 
-model = DPCNN(vocabulary_size=len(ds.vocab), num_classes=ds.num_classes, embedding_size=embedding_size,)
+model = DPCNN(vocabulary_size=len(ds.vocab), num_classes=ds.num_classes, embedding_size=embedding_size,
+              pretrained_vec=vecs)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
