@@ -71,7 +71,7 @@ Run the unit tests with `pip install pytest` then `python -m pytest tests`.
 
 ### Pytorch (CPU/GPU)
 -  **FastText**   : [Bag of Tricks for Efficient Text Classification - 2016](https://arxiv.org/abs/1607.01759)
--  **HashedFastText** : fastText as in the C++ supervised mode, hashed word & character n-grams, EmbeddingBag, hierarchical softmax, pretrained vectors, SGD with linear decay, feature ids identical to native fastText - Source : [facebookresearch](https://github.com/facebookresearch/fastText), [InseeFrLab](https://github.com/InseeFrLab/torchTextClassifiers)
+-  **HashedFastText** : FastText closer to the original C++ implementation (hashed n-grams, hierarchical softmax, same feature ids) - Source : [facebookresearch](https://github.com/facebookresearch/fastText), [InseeFrLab](https://github.com/InseeFrLab/torchTextClassifiers)
 -  **DAN**        : [Deep Unordered Composition Rivals Syntactic Methods for Text Classification - 2015](https://arxiv.org/abs/1607.01759)
 -  **MLP**        : A model based on an embedding layer and a configurable pooling & feed-forward neural network on top
 -  **NBSVM++**    : [Baselines and Bigrams: Simple, Good Sentiment and Topic Classification - 2012](https://www.aclweb.org/anthology/P12-2018.pdf) - Source : [FastAI](https://github.com/fastai/fastai/blob/release-1.0.61/old/fastai/nlp.py) 
@@ -99,9 +99,11 @@ Run the unit tests with `pip install pytest` then `python -m pytest tests`.
 -  **AdaBound**  : [Adaptive Gradient Methods with Dynamic Bound of Learning Rate - 2019](https://arxiv.org/pdf/1902.09843) - Source : [Luolc](https://github.com/Luolc/AdaBound)
 -  **DiffGrad**  : [diffGrad: An Optimization Method for Convolutional Neural Networks - 2019](https://arxiv.org/pdf/1909.11015) - Source : [Less Wright](https://github.com/lessw2020/Best-Deep-Learning-Optimizers/tree/master/diffgrad)
 -  **Lookahead** : [Lookahead Optimizer: k steps forward, 1 step back - 2019](https://arxiv.org/pdf/1907.08610) - Source : [lonePatient](https://github.com/lonePatient/lookahead_pytorch)
+-  **Prodigy**   : [Prodigy: An Expeditiously Adaptive Parameter-Free Learner - 2024](https://arxiv.org/abs/2306.06101) - Source : [konstmish](https://github.com/konstmish/prodigy)
 -  **QHAdam**    : [Quasi-hyperbolic momentum and Adam for deep learning - 2019](https://arxiv.org/pdf/1810.06801.pdf) - Source : [FacebookResearch](https://github.com/facebookresearch/qhoptim)
 -  **RAdam**     : [On the Variance of the Adaptive Learning Rate and Beyond - 2020](https://arxiv.org/pdf/1908.03265) - Source : [LiyuanLucasLiu](https://github.com/LiyuanLucasLiu/RAdam)
 -  **Ranger**    : [An Adaptive Remote Stochastic Gradient Method for Training Neural Networks - 2019](https://arxiv.org/pdf/1905.01422) - Source : [Less Wright](https://github.com/lessw2020/Ranger-Deep-Learning-Optimizer)
+-  **Schedule-Free AdamW / SGD** : [The Road Less Scheduled - 2024](https://arxiv.org/abs/2405.15682) - Source : [facebookresearch](https://github.com/facebookresearch/schedule_free)
 ## Additional Pytorch Activation Functions
 -  **Mish**           : [Mish: A Self Regularized Non-Monotonic Neural Activation Function - 2019](https://arxiv.org/pdf/1908.08681) - Source : [Diganta Misra](https://github.com/digantamisra98/Mish)
 -  **Swish/SwishPlus**: [Flatten-T Swish: a thresholded ReLU-Swish-like activation function for deep learning - 2019](https://arxiv.org/ftp/arxiv/papers/1812/1812.06247.pdf) - Source : [Geffnet](https://github.com/rwightman/gen-efficientnet-pytorch/blob/master/geffnet/activations/activations.py)
