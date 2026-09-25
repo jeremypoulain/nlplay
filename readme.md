@@ -65,6 +65,7 @@ Run the unit tests with `pip install pytest` then `python -m pytest tests`.
 -  **QRNN**       : [Quasi-Recurrent Neural Networks - 2016](https://arxiv.org/pdf/1611.01576) - Source : [Dreamgonfly](https://github.com/dreamgonfly/deep-text-classification-pytorch)
 -  **SWEM**       : [Baseline Needs More Love: On Simple Word-Embedding-Based Models and Associated Pooling Mechanisms - 2018](https://arxiv.org/pdf/1805.09843.pdf)
 -  **SRU**        : [Simple Recurrent Units for Highly Parallelizable Recurrence - 2017](https://arxiv.org/pdf/1709.02755.pdf) - Source : [Asappresearch](https://github.com/asappresearch/sru)
+-  **SRU++**      : [When Attention Meets Fast Recurrence: Training Language Models with Reduced Compute - 2021](https://arxiv.org/abs/2102.12459) - Source : [Asappresearch](https://github.com/asappresearch/sru/tree/3.0.0-dev)
 -  **LSTM/BiLSTM**: [Long Short Term Memory - 1997](https://www.bioinf.jku.at/publications/older/2604.pdf),
                     [Neural architectures for named entity recognition - 2016](https://arxiv.org/pdf/1603.01360.pdf)
 -  **GRU/BiGRU**  : [Neural Machine Translation by Jointly Learning to Align and Translate - 2014](https://arxiv.org/pdf/1409.0473)

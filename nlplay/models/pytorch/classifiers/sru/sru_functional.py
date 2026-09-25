@@ -7,8 +7,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from nlplay.models.pytorch.classifiers.sru.cuda_functional import SRU_Compute_GPU
-
 SRU_CPU_kernel = None
 SRU_GPU_kernel = None
 
@@ -32,13 +30,13 @@ def _lazy_load_cpu_kernel():
     return SRU_CPU_kernel
 
 
-# load C++ implementation for GPU computation
+# load C++ implementation for GPU computation, compiled on first use so CPU only setups can import SRU
 def _lazy_load_cuda_kernel():
-    try:
+    global SRU_GPU_kernel
+    if SRU_GPU_kernel is None:
         from .cuda_functional import SRU_Compute_GPU
-    except:
-        pass
-    return SRU_Compute_GPU
+        SRU_GPU_kernel = SRU_Compute_GPU
+    return SRU_GPU_kernel
 
 
 class SRU_Compute_CPU():
@@ -184,15 +182,16 @@ class SRU_Compute_CPU():
                 else:
                     raise ValueError('Activation type must be 0, 1, or 2, not {}'.format(activation_type))
 
+                # Same dropout placement as the CUDA kernel: h = x + dropout(r * (g(c) - x))
                 if x_prime is not None:
-                    h_t = xp[t] + (g_c_t * mask_c_ - xp[t]) * reset_t
+                    h_t = xp[t] + (g_c_t - xp[t]) * mask_c_ * reset_t
                 else:
                     h_t = g_c_t * mask_c_ * reset_t
                 if mask_pad_ is not None:
                     h_t = h_t * (1-mask_pad_[t])
                 h[t, :, di, :] = h_t
 
-            c_final.append(c_t)
+            c_final.append(c_t.view(batch, d))
         return h.view(length, batch, -1), torch.stack(c_final, dim=1).view(batch, -1)
 
 
@@ -215,6 +214,7 @@ class SRUCell(nn.Module):
         use_tanh (bool) : use tanh activation
         is_input_normalized (bool) : whether the input is normalized (e.g. batch norm / layer norm)
         bidirectional (bool) : whether or not to employ a bidirectional cell.
+        weight_c_init (float) : if set, weight_c is drawn uniformly in [-weight_c_init, weight_c_init] as in SRU++
     """
 
     def __init__(self,
@@ -230,7 +230,8 @@ class SRUCell(nn.Module):
                  layer_norm=False,
                  rescale=True,
                  v1=False,
-                 custom_m=None):
+                 custom_m=None,
+                 weight_c_init=None):
 
         super(SRUCell, self).__init__()
         self.input_size = input_size
@@ -246,6 +247,7 @@ class SRUCell(nn.Module):
         self.activation_type = 0
         self.activation = 'none'
         self.custom_m = custom_m
+        self.weight_c_init = weight_c_init
         if use_tanh:
             self.activation_type = 1
             self.activation = 'tanh'
@@ -342,6 +344,8 @@ class SRUCell(nn.Module):
                 w[:, :, :, 1].mul_(0.5**0.5)
                 w[:, :, :, 2].mul_(0.5**0.5)
             self.weight_c.data.mul_(0.5**0.5)
+            if self.weight_c_init is not None:
+                self.weight_c.data.uniform_(-self.weight_c_init, self.weight_c_init)
         else:
             self.weight_c.data.zero_()
             self.weight_c.requires_grad = False
@@ -407,8 +411,7 @@ class SRUCell(nn.Module):
         else:
             mask_c = None
 
-        #SRU_Compute = _lazy_load_cuda_kernel() if input.is_cuda else SRU_Compute_CPU
-        SRU_Compute = SRU_Compute_GPU
+        SRU_Compute = _lazy_load_cuda_kernel() if input.is_cuda else SRU_Compute_CPU
         h, c = SRU_Compute.apply(U, residual, V, self.bias, c0,
                                  self.activation_type,
                                  hidden_size,
