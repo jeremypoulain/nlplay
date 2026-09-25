@@ -69,6 +69,8 @@ class PytorchModelTrainer(object):
         self.max_grad_clip_norm = max_grad_clip_norm
         self.log_interval = log_interval
 
+        self.apex = False
+        self.apex_opt_level = None
         if use_mixed_precision:
             if APEX_AVAILABLE and torch.cuda.is_available():
                 # We can use Nvidia Apex mixed precision mode
@@ -77,9 +79,10 @@ class PytorchModelTrainer(object):
                 self.model, self.optimizer = amp.initialize(
                     self.model, self.optimizer, opt_level=self.apex_opt_level
                 )
-        else:
-            self.apex = False
-            self.apex_opt_level = None
+            else:
+                logging.warning(
+                    "use_mixed_precision requires Nvidia Apex and a CUDA device, training in FP32"
+                )
 
         logging.getLogger(__name__)
 
@@ -257,29 +260,33 @@ class PytorchModelTrainer(object):
                     % (epoch + 1, self.n_epochs, get_elapsed_time(start_time))
                 )
 
-                # early stopping & checkpoint
-                current_score = val_acc
-                if self.best_score is None:
-                    self.best_score = current_score.to(torch.device("cpu")).numpy()
-                    self.best_epoch = epoch + 1
-                    self.save_checkpoint()
-                elif (
-                    self.apply_early_stopping
-                    and current_score < self.best_score + self.es_improvement_delta
+                # early stopping & checkpoint of the best epoch, with or without early stopping
+                current_score = float(val_acc)
+                if (
+                    self.best_score is None
+                    or current_score > self.best_score + self.es_improvement_delta
                 ):
-                    self.es_counter += 1
-                    logging.info(
-                        f"EarlyStopping patience counter: {self.es_counter} out of {self.es_patience}"
-                    )
-                    if self.es_counter >= self.es_patience:
-                        self.early_stop = True
-                        logging.warning("/!\\ Early stopping model training /!\\ ")
-                        break
-                else:
                     self.best_score = current_score
                     self.best_epoch = epoch + 1
                     self.save_checkpoint()
                     self.es_counter = 0
+                else:
+                    self.es_counter += 1
+                    if self.apply_early_stopping:
+                        logging.info(
+                            f"EarlyStopping patience counter: {self.es_counter} out of {self.es_patience}"
+                        )
+                        if self.es_counter >= self.es_patience:
+                            self.early_stop = True
+                            logging.warning("/!\\ Early stopping model training /!\\ ")
+                            break
+
+        # Keep the weights of the best epoch, not the last one
+        if self.best_epoch > 0:
+            self.load_checkpoint(self.checkpoint_path)
+            logging.info(
+                "Restored the model of the best epoch from {}".format(self.checkpoint_path)
+            )
 
         # Final results
         logging.info("------------------------------------------")
@@ -295,24 +302,30 @@ class PytorchModelTrainer(object):
         )
         logging.info("------------------------------------------")
 
-    def save_checkpoint(self):
-        """Saves model when validation loss decreases."""
-        f_name = "checkpoint_{}.pt".format(self.checkpoint_file_suffix)
+    @property
+    def checkpoint_path(self) -> str:
+        """
+        checkpoint_<model class>[_<checkpoint_file_suffix>].pt in model_output_folder, so that runs of
+        different models do not overwrite each other, the suffix separates runs of the same model.
+        """
+        f_name = "checkpoint_{}".format(self.model.__class__.__name__)
+        if self.checkpoint_file_suffix:
+            f_name += "_{}".format(self.checkpoint_file_suffix)
+        return os.path.join(self.model_output_folder, f_name + ".pt")
 
+    def save_checkpoint(self):
+        """Saves the model when the validation accuracy improves."""
+        if self.model_output_folder:
+            os.makedirs(self.model_output_folder, exist_ok=True)
+        checkpoint = {"model": self.model.state_dict()}
         if self.apex:
-            checkpoint = {
-                "model": self.model.state_dict(),
-                "optimizer": self.optimizer.state_dict(),
-                "amp": amp.state_dict(),
-            }
-            torch.save(checkpoint, os.path.join(self.model_output_folder, f_name))
-        else:
-            checkpoint = {"model": self.model.state_dict()}
-            torch.save(checkpoint, os.path.join(self.model_output_folder, f_name))
+            checkpoint.update(optimizer=self.optimizer.state_dict(), amp=amp.state_dict())
+        torch.save(checkpoint, self.checkpoint_path)
 
     def load_checkpoint(self, model_file_path: str):
+        # Loaded on CPU, load_state_dict copies the weights to the device of the model
+        checkpoint = torch.load(model_file_path, map_location="cpu")
+        self.model.load_state_dict(checkpoint["model"])
         if self.apex:
-            raise NotImplementedError()
-        else:
-            checkpoint = torch.load(model_file_path)
-            self.model.load_state_dict(checkpoint["model"])
+            self.optimizer.load_state_dict(checkpoint["optimizer"])
+            amp.load_state_dict(checkpoint["amp"])
