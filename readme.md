@@ -28,7 +28,27 @@ For a Pascal GPU such as a GTX 1080, install PyTorch before the other requiremen
 pip install torch==2.14.0 --index-url https://download.pytorch.org/whl/cu126
 ```
 
-Check that the installed build supports the GPU, `get_arch_list()` must contain its architecture (`sm_61` for a GTX 1080):
+`fasttext==0.9.2` is only published as a source package and its build fails on recent setups: `setup.py` imports
+pybind11 before installing it, and GCC 13 or newer rejects `src/args.cc` (`'uint64_t' was not declared`). It needs a C++
+compiler and the Python headers (`python3.x-dev` for the system Python), then install it before the other requirements:
+
+```bash
+pip install pybind11 setuptools wheel numpy
+CXXFLAGS="-include cstdint" pip install --no-build-isolation fasttext==0.9.2
+```
+
+With [uv](https://docs.astral.sh/uv/), a uv managed Python ships the headers:
+
+```bash
+uv venv --managed-python --python 3.12
+uv pip install torch==2.14.0 --index-url https://download.pytorch.org/whl/cu126
+uv pip install pybind11 setuptools wheel numpy
+CXXFLAGS="-include cstdint" uv pip install --no-build-isolation fasttext==0.9.2
+uv pip install -r requirements.txt
+```
+
+Check that the installed build supports the GPU, `get_arch_list()` must contain its architecture or an earlier one of
+the same major version (`sm_60` or `sm_61` for a GTX 1080, compute capability 6.1):
 
 ```python
 import torch
