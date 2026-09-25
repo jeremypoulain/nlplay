@@ -13,7 +13,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from keras_preprocessing.text import Tokenizer
 from keras_preprocessing import text
+from nlplay.features.fasttext_features import FastTextFeaturizer, read_word_vectors
 from nlplay.features.text_vectorizer import DataVectorizer
+from nlplay.models.pytorch.classifiers.fasttext_hashed import FastTextDataset
 from nlplay.utils.parlib import parallelApply
 from nlplay.utils.utils import get_elapsed_time
 
@@ -1020,3 +1022,148 @@ class DSGenerator(object):
                 return train_ds, val_ds
         else:
             return train_ds
+
+
+class FastTextDatasetGenerator(object):
+    """
+    Datasets of fastText feature ids for HashedFastText: words, hashed word n-grams and optional
+    character n-grams, with the ids of native fastText (FastTextFeaturizer), variable length texts
+    padded per batch by FastTextDataset.collate_fn.
+    """
+
+    def __init__(self, seed: int = 123):
+        self.seed = seed
+        self.train_file = None
+        self.test_file = None
+        self.val_file = None
+
+        self.text_col_idx = None
+        self.label_col_idx = None
+
+        self.featurizer = None
+        self.num_features = None
+        self.num_classes = None
+        self.class_counts = None
+        self.pretrained_words = None
+        self.pretrained_vectors = None
+
+        self.params = {}
+
+    def _read_csv(self, file, sep, encoding, header, preprocess_func, preprocess_ncore):
+        df = pd.read_csv(file, sep=sep, encoding=encoding, header=header)
+        texts = df[df.columns[self.text_col_idx]]
+        if preprocess_func is not None:
+            texts = parallelApply(texts, preprocess_func, preprocess_ncore)
+        X = texts.tolist()
+        y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int, copy=True)
+        del df
+        return X, y
+
+    def _to_dataset(self, X, y):
+        return FastTextDataset(self.featurizer.transform(X), y, self.num_features)
+
+    def from_csv(
+        self,
+        train_file: str,
+        test_file: str = None,
+        val_file: str = None,
+        val_size: float = 0.0,
+        text_col_idx=0,
+        label_col_idx=1,
+        sep: str = ",",
+        header=0,
+        encoding: str = "utf8",
+        preprocess_func=None,
+        preprocess_ncore=2,
+        word_ngrams: int = 2,
+        minn: int = 0,
+        maxn: int = 0,
+        bucket: int = 2000000,
+        min_count: int = 1,
+        pretrained_vec_file: str = None,
+    ):
+        """
+        :param val_size: share of the train file kept for validation (stratified) when val_file is None.
+        :param word_ngrams, minn, maxn, bucket, min_count: FastTextFeaturizer parameters (fastText
+            -wordNgrams, -minn, -maxn, -bucket, -minCount).
+        :param pretrained_vec_file: .vec / GloVe file, its words are added to the vocabulary as fastText
+            -pretrainedVectors, load them with HashedFastText.load_word_vectors(ds.featurizer,
+            ds.pretrained_words, ds.pretrained_vectors).
+        :returns: train_ds, then test_ds if test_file is given, then val_ds if val_file or val_size is given.
+        """
+        logging.info("Starting Data Preparation ...")
+        logging.info("  Training Data ...")
+        start_time = time.time()
+
+        self.train_file = train_file
+        self.test_file = test_file
+        self.val_file = val_file
+        self.text_col_idx = text_col_idx
+        self.label_col_idx = label_col_idx
+        read_args = (sep, encoding, header, preprocess_func, preprocess_ncore)
+
+        X, y = self._read_csv(train_file, *read_args)
+        X_val, y_val = None, None
+        if val_size > 0.0 and val_file is None:
+            # create valid partition from train partition, keeping class distribution
+            X, X_val, y, y_val = train_test_split(
+                X, y, stratify=y, test_size=val_size, random_state=self.seed
+            )
+
+        if pretrained_vec_file is not None:
+            self.pretrained_words, self.pretrained_vectors = read_word_vectors(
+                pretrained_vec_file
+            )
+        self.featurizer = FastTextFeaturizer(
+            word_ngrams=word_ngrams,
+            minn=minn,
+            maxn=maxn,
+            bucket=bucket,
+            min_count=min_count,
+        )
+        self.featurizer.fit(X, pretrained_words=self.pretrained_words)
+        self.num_features = self.featurizer.num_features
+        train_ds = self._to_dataset(X, y)
+        del X, y
+        gc.collect()
+        datasets = [train_ds]
+
+        if test_file is not None:
+            logging.info("  Test Data ...")
+            datasets.append(self._to_dataset(*self._read_csv(test_file, *read_args)))
+
+        if val_file is not None:
+            X_val, y_val = self._read_csv(val_file, *read_args)
+        if X_val is not None:
+            logging.info("  Validation Data ...")
+            datasets.append(self._to_dataset(X_val, y_val))
+            del X_val, y_val
+            gc.collect()
+
+        self.num_classes = int(max(ds.labels.max() for ds in datasets)) + 1
+        self.class_counts = train_ds.labels.bincount(minlength=self.num_classes).tolist()
+
+        logging.info(
+            "Data Preparation Completed - Time elapsed: " + get_elapsed_time(start_time)
+        )
+
+        self.params = {
+            "seed": self.seed,
+            "train_file": self.train_file,
+            "test_file": self.test_file,
+            "val_file": self.val_file,
+            "val_size": val_size,
+            "num_features": self.num_features,
+            "nwords": self.featurizer.nwords,
+            "preprocess_func": None if preprocess_func is None else preprocess_func.__name__,
+            "preprocess_ncore": preprocess_ncore,
+            "word_ngrams": word_ngrams,
+            "minn": minn,
+            "maxn": maxn,
+            "bucket": bucket,
+            "min_count": min_count,
+            "pretrained_vec_file": pretrained_vec_file,
+            "num_classes": self.num_classes,
+        }
+
+        return tuple(datasets) if len(datasets) > 1 else train_ds
