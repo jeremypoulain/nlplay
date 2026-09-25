@@ -135,6 +135,7 @@ class CSRDatasetGenerator(object):
         self.vectorizer = TfidfVectorizer(
             use_idf=use_idf,
             tokenizer=tokenizer,
+            token_pattern=None,
             ngram_range=ngram_range,
             min_df=min_df,
             max_df=max_df,
@@ -151,7 +152,7 @@ class CSRDatasetGenerator(object):
                 df[df.columns[self.text_col_idx]], preprocess_func, preprocess_ncore
             )
         X = df[df.columns[self.text_col_idx]].tolist()
-        y = df[df.columns[self.label_col_idx]].to_numpy(float)
+        y = df[df.columns[self.label_col_idx]].to_numpy(float, copy=True)
         del df
 
         self.X_train = self.vectorizer.fit_transform(X)
@@ -170,7 +171,7 @@ class CSRDatasetGenerator(object):
                     df[df.columns[self.text_col_idx]], preprocess_func, preprocess_ncore
                 )
             X = df[df.columns[self.text_col_idx]].tolist()
-            y = df[df.columns[self.label_col_idx]].to_numpy(float)
+            y = df[df.columns[self.label_col_idx]].to_numpy(float, copy=True)
             del df
             self.X_test = self.vectorizer.transform(X)
             self.y_test = y
@@ -185,7 +186,7 @@ class CSRDatasetGenerator(object):
                     df[df.columns[self.text_col_idx]], preprocess_func, preprocess_ncore
                 )
             X = df[df.columns[self.text_col_idx]].tolist()
-            y = df[df.columns[self.label_col_idx]].to_numpy(float)
+            y = df[df.columns[self.label_col_idx]].to_numpy(float, copy=True)
             del df
             self.X_val = self.vectorizer.transform(X)
             self.y_val = y
@@ -367,6 +368,7 @@ class NBSVMDatasetGenerator(object):
         self.vectorizer = TfidfVectorizer(
             use_idf=use_idf,
             tokenizer=tokenizer,
+            token_pattern=None,
             ngram_range=ngram_range,
             min_df=min_df,
             max_df=max_df,
@@ -383,7 +385,7 @@ class NBSVMDatasetGenerator(object):
                 df[df.columns[self.text_col_idx]], preprocess_func, preprocess_ncore
             )
         X = df[df.columns[self.text_col_idx]].tolist()
-        y = df[df.columns[self.label_col_idx]].to_numpy(int)
+        y = df[df.columns[self.label_col_idx]].to_numpy(int, copy=True)
         del df
         self.X_train = self.vectorizer.fit_transform(X)
         self.y_train = y
@@ -412,7 +414,7 @@ class NBSVMDatasetGenerator(object):
                     df[df.columns[self.text_col_idx]], preprocess_func, preprocess_ncore
                 )
             X = df[df.columns[self.text_col_idx]].tolist()
-            y = df[df.columns[self.label_col_idx]].to_numpy(int)
+            y = df[df.columns[self.label_col_idx]].to_numpy(int, copy=True)
             del df
             self.X_test = self.vectorizer.transform(X)
             self.y_test = y
@@ -434,7 +436,7 @@ class NBSVMDatasetGenerator(object):
                     df[df.columns[self.text_col_idx]], preprocess_func, preprocess_ncore
                 )
             X = df[df.columns[self.text_col_idx]].tolist()
-            y = df[df.columns[self.label_col_idx]].to_numpy(int)
+            y = df[df.columns[self.label_col_idx]].to_numpy(int, copy=True)
             del df
             self.X_val = self.vectorizer.transform(X)
             self.y_val = y
@@ -624,7 +626,7 @@ class NNDatasetGenerator(object):
                 df[df.columns[self.text_col_idx]], preprocess_func, preprocess_ncore
             )
         X = df[df.columns[self.text_col_idx]].tolist()
-        y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int)
+        y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int, copy=True)
 
         del df
         logging.info("Adding 1-gram features".format(ngram_range[1]))
@@ -690,7 +692,7 @@ class NNDatasetGenerator(object):
                     df[df.columns[self.text_col_idx]], preprocess_func, preprocess_ncore
                 )
             X = df[df.columns[self.text_col_idx]].tolist()
-            y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int)
+            y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int, copy=True)
             del df
             self.X_test = self.tokenizer.texts_to_sequences(X)
             if ngram_range[1] > 1:
@@ -714,7 +716,7 @@ class NNDatasetGenerator(object):
                     df[df.columns[self.text_col_idx]], preprocess_func, preprocess_ncore
                 )
             X = df[df.columns[self.text_col_idx]].tolist()
-            y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int)
+            y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int, copy=True)
             del df
             self.X_val = self.tokenizer.texts_to_sequences(X)
             if ngram_range[1] > 1:
@@ -913,7 +915,7 @@ class DSGenerator(object):
 
         df = pd.read_csv(self.train_file, sep=sep, encoding=encoding, header=header)
         X = df[df.columns[self.text_col_idx]].tolist()
-        y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int)
+        y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int, copy=True)
         del df
 
         if val_size > 0.0 and self.val_file is None:
@@ -949,7 +951,7 @@ class DSGenerator(object):
             logging.info("  Test Data ...")
             df = pd.read_csv(self.test_file, sep=sep, encoding=encoding, header=header)
             X = df[df.columns[self.text_col_idx]].tolist()
-            y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int)
+            y = df[df.columns[self.label_col_idx]].to_numpy(dtype=int, copy=True)
             del df
 
             X = self.vectorizer.transform(X)
@@ -971,7 +973,7 @@ class DSGenerator(object):
             if self.val_file is not None:
                 df = pd.read_csv(self.val_file, sep=sep, encoding=encoding)
                 X_val = df[df.columns[self.text_col_idx]].tolist()
-                y_val = df[df.columns[self.label_col_idx]].to_numpy(dtype=int)
+                y_val = df[df.columns[self.label_col_idx]].to_numpy(dtype=int, copy=True)
                 del df
             X_val = self.vectorizer.transform(X_val)
             self.X_val = pad_sequences(X_val, maxlen=ds_max_seq, padding="post")

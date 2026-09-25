@@ -279,7 +279,7 @@ class FastTextDataset(Dataset):
         if len(features) != len(labels):
             raise ValueError("features and labels must have the same length")
         self.features = features
-        self.labels = torch.as_tensor(np.asarray(labels), dtype=torch.long)
+        self.labels = torch.tensor(np.asarray(labels), dtype=torch.long)
         self.padding_idx = padding_idx
 
     def __len__(self):

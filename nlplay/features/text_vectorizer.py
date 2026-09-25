@@ -80,7 +80,7 @@ class DataVectorizer(object):
         if self.preprocess_func is None:
             re_tok = re.compile('([%s“”¨«»®´·º½¾¿¡§£₤‘’])' % string.punctuation)
             tokenizer = lambda x: re_tok.sub(r' \1 ', x).split()
-            self.vectorizer = CountVectorizer(tokenizer=tokenizer,
+            self.vectorizer = CountVectorizer(tokenizer=tokenizer, token_pattern=None,
                                               ngram_range=self.ngram_range, min_df=self.min_df, max_df=self.max_df,
                                               max_features=self.max_features, stop_words=self.stop_words,
                                               lowercase=True)
