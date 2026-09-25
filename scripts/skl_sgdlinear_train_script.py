@@ -10,13 +10,13 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import Pipeline
+from nlplay.data.cache import DSManager, DS
 from nlplay.features.text_cleaner import base_cleaner
 from nlplay.utils.parlib import parallelApply
 
 if __name__ == "__main__":
 
-    train_csv = "../nlplay/data_cache/IMDB/IMDB_train.csv"
-    test_csv = "../nlplay/data_cache//IMDB/IMDB_test.csv"
+    train_csv, test_csv, val_csv = DSManager(DS.IMDB.value).get_partition_paths()
 
     # Data preparation
     df_train = pd.read_csv(train_csv)
